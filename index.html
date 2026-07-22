@@ -199,9 +199,118 @@
     }
 
     .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .feed-item {
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .feed-item .card {
+      border: none;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .feed-comments {
+      padding: 0.9rem 1rem 1rem;
+      background: #fafafa;
+      border-top: 1px dashed var(--line);
+    }
+
+    .feed-comments .feed-comments-title {
+      font-size: 0.85rem;
+      color: var(--fg);
+      margin-bottom: 0.65rem;
+      font-weight: 400;
+    }
+
+    .share-box {
+      margin-top: 1.1rem;
+      padding: 1rem;
+      border: 1px solid var(--accent);
+      background: #fffdf6;
+      text-align: left;
+    }
+
+    .feed-comment-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      max-height: 160px;
+      overflow-y: auto;
+      margin-bottom: 0.7rem;
+    }
+
+    .feed-comments .comment-form textarea {
+      margin-bottom: 0.45rem;
+    }
+
+    .feed-comments .comment-form button {
+      width: 100%;
+    }
+
+    .share-landing {
+      text-align: center;
+      padding: 0.9rem 1.25rem;
+      background: #111;
+      color: #f5f5f5;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .share-landing.hidden { display: none; }
+
+    .share-landing strong {
+      color: #f0d78c;
+      font-weight: 400;
+    }
+
+    .share-landing button {
+      margin-top: 0.55rem;
+      width: auto;
+      padding: 0.4rem 0.9rem;
+      border-color: #f0d78c;
+      color: #111;
+      background: #f0d78c;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .share-link-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.55rem;
+    }
+
+    .share-link-row input {
+      flex: 1;
+      font: inherit;
+      font-size: 0.8rem;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--fg);
+      padding: 0.5rem 0.6rem;
+      outline: none;
+    }
+
+    .share-link-row button {
+      width: auto;
+      flex: 0 0 auto;
+      white-space: nowrap;
+      font-size: 0.8rem;
+      padding: 0.45rem 0.7rem;
+    }
+
+    .share-box .share-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .share-box .share-actions button {
+      flex: 1;
     }
 
     .card {
@@ -506,6 +615,134 @@
 
     .watch-result.hidden { display: none; }
 
+    .share-box {
+      margin-top: 1.1rem;
+      padding: 1rem;
+      border: 1px solid var(--accent);
+      background: #fffdf6;
+      text-align: left;
+    }
+
+    .share-box.hidden { display: none; }
+
+    .share-box .share-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+    }
+
+    .share-box pre {
+      font: inherit;
+      white-space: pre-wrap;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.85rem 1rem;
+      line-height: 1.5;
+      margin-bottom: 0.65rem;
+    }
+
+    .share-box button {
+      width: 100%;
+    }
+
+    .share-box .share-copied {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #2a7a4b;
+      margin-top: 0.45rem;
+      min-height: 1.2em;
+    }
+
+    .comments {
+      margin-top: 1.15rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .comments-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+    }
+
+    .comments-head .count {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .comment-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-height: 220px;
+      overflow-y: auto;
+      margin-bottom: 0.85rem;
+    }
+
+    .comment-item {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 0.65rem;
+    }
+
+    .comment-item .who {
+      font-size: 0.8rem;
+      color: var(--fg);
+      margin-bottom: 0.2rem;
+    }
+
+    .comment-item .when {
+      color: var(--muted);
+      font-size: 0.75rem;
+      margin-left: 0.35rem;
+    }
+
+    .comment-item .body {
+      font-size: 0.92rem;
+      line-height: 1.45;
+      color: var(--fg);
+    }
+
+    .comment-empty {
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 0.35rem 0 0.5rem;
+    }
+
+    .comment-form textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--line);
+      color: var(--fg);
+      font: inherit;
+      font-size: 0.95rem;
+      padding: 0.45rem 0;
+      outline: none;
+      resize: vertical;
+      margin-bottom: 0.55rem;
+    }
+
+    .comment-form textarea:focus {
+      border-bottom-color: var(--accent);
+    }
+
+    .comment-form .row {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .comment-form .row button { flex: 1; }
+
+    .comment-form .msg {
+      color: var(--danger);
+      font-size: 0.8rem;
+      min-height: 1.1em;
+      margin-bottom: 0.35rem;
+    }
+
     .option-list label { margin-top: 0.35rem; }
 
     .option-guide {
@@ -554,6 +791,11 @@
 
   <p class="notice">로그인하고 <strong>참여 1번</strong> 하면 만약에 상황을 개시할 수 있습니다.</p>
 
+  <div class="share-landing hidden" id="shareLanding">
+    <p id="shareLandingText"></p>
+    <button type="button" id="shareLandingBtn">나도 이 챌린지 하기</button>
+  </div>
+
   <section class="seo-intro" aria-label="서비스 소개">
     <h1>심심할 때 하는 만약에 챌린지</h1>
     <p>
@@ -576,7 +818,7 @@
     <div class="modal">
       <button type="button" class="close-x" data-close="authOverlay" aria-label="닫기">×</button>
       <h2>로그인</h2>
-      <p class="hint">닉네임과 비밀번호만으로 가입·로그인합니다.</p>
+      <p class="hint">닉네임과 비밀번호만 있으면 돼요. 약 3초면 로그인·가입이 끝나요.</p>
       <form id="authForm">
         <label for="username">닉네임</label>
         <div class="nick-row">
@@ -627,6 +869,34 @@
         <button type="button" class="pick" id="choiceB"></button>
       </div>
       <p class="watch-result hidden" id="watchResult"></p>
+      <div class="share-box hidden" id="shareBox">
+        <p class="share-label">결과 공유</p>
+        <pre id="shareText"></pre>
+        <div class="share-link-row">
+          <input id="shareLinkInput" readonly />
+          <button type="button" id="copyLinkBtn">링크 복사</button>
+        </div>
+        <div class="share-actions">
+          <button type="button" class="primary" id="copyShareBtn">문장 복사</button>
+        </div>
+        <p class="share-copied" id="shareCopied"></p>
+      </div>
+
+      <section class="comments" id="commentsSection" aria-label="댓글">
+        <div class="comments-head">
+          <strong>댓글</strong>
+          <span class="count" id="commentCount">0개</span>
+        </div>
+        <div class="comment-list" id="commentList"></div>
+        <form class="comment-form" id="commentForm">
+          <label for="commentInput" class="share-label">의견 남기기</label>
+          <textarea id="commentInput" rows="2" maxlength="200" placeholder="이 만약에, 나는 이렇게 생각해요" required></textarea>
+          <p class="msg" id="commentMsg"></p>
+          <div class="row">
+            <button type="submit" class="primary">댓글 달기</button>
+          </div>
+        </form>
+      </section>
     </div>
   </div>
 
@@ -634,6 +904,20 @@
     const STORAGE_USERS = "ifthink_users_v2";
     const STORAGE_SESSION = "ifthink_session_v2";
     const STORAGE_SCENARIOS = "ifthink_scenarios_v7";
+    const STORAGE_COMMENTS = "ifthink_comments_v1";
+
+    const SEED_COMMENTS = {
+      "seed-ex-1": [
+        { id: "c1", author: "밤산책", text: "나는 읽씹이 답이다… 다시 만나면 또 상처받음", createdAt: Date.now() - 80000 },
+        { id: "c2", author: "커피두잔", text: "바로 만나는 사람 심리 뭐임 ㄹㅇ 궁금", createdAt: Date.now() - 50000 }
+      ],
+      "seed-ex-3": [
+        { id: "c3", author: "지각왕", text: "안 한다 고르고 싶지만 손이 먼저 간다ㅋㅋ", createdAt: Date.now() - 60000 }
+      ],
+      "seed-ex-7": [
+        { id: "c4", author: "월급날", text: "100억 고르면 양심 없는 거냐… 고민됨", createdAt: Date.now() - 40000 }
+      ]
+    };
 
     const SEED = [
       {
@@ -930,6 +1214,45 @@
     function saveScenarios(list) {
       localStorage.setItem(STORAGE_SCENARIOS, JSON.stringify(list));
     }
+    function loadComments() {
+      try {
+        const raw = localStorage.getItem(STORAGE_COMMENTS);
+        if (!raw) {
+          localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(SEED_COMMENTS));
+          return JSON.parse(JSON.stringify(SEED_COMMENTS));
+        }
+        return JSON.parse(raw);
+      } catch {
+        return JSON.parse(JSON.stringify(SEED_COMMENTS));
+      }
+    }
+    function saveComments(map) {
+      localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(map));
+    }
+    function getCommentsFor(scenarioId) {
+      const map = loadComments();
+      const list = map[scenarioId] || [];
+      return list.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+    function addComment(scenarioId, author, text) {
+      const map = loadComments();
+      if (!map[scenarioId]) map[scenarioId] = [];
+      map[scenarioId].push({
+        id: "c-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+        author,
+        text,
+        createdAt: Date.now()
+      });
+      saveComments(map);
+      return getCommentsFor(scenarioId);
+    }
+    function formatCommentTime(ts) {
+      const diff = Date.now() - (ts || 0);
+      if (diff < 60000) return "방금";
+      if (diff < 3600000) return Math.floor(diff / 60000) + "분 전";
+      if (diff < 86400000) return Math.floor(diff / 3600000) + "시간 전";
+      return Math.floor(diff / 86400000) + "일 전";
+    }
     function getSession() {
       return localStorage.getItem(STORAGE_SESSION);
     }
@@ -1000,12 +1323,30 @@
     const choiceA = document.getElementById("choiceA");
     const choiceB = document.getElementById("choiceB");
     const watchResult = document.getElementById("watchResult");
+    const shareBox = document.getElementById("shareBox");
+    const shareText = document.getElementById("shareText");
+    const copyShareBtn = document.getElementById("copyShareBtn");
+    const shareCopied = document.getElementById("shareCopied");
+    const shareLinkInput = document.getElementById("shareLinkInput");
+    const copyLinkBtn = document.getElementById("copyLinkBtn");
+    const shareLanding = document.getElementById("shareLanding");
+    const shareLandingText = document.getElementById("shareLandingText");
+    const shareLandingBtn = document.getElementById("shareLandingBtn");
+    const SHARE_URL = (location.origin && location.protocol !== "file:")
+      ? location.origin + "/"
+      : "https://ifthink.vercel.app/";
     const vsWrap = document.getElementById("vsWrap");
+    const commentList = document.getElementById("commentList");
+    const commentCount = document.getElementById("commentCount");
+    const commentForm = document.getElementById("commentForm");
+    const commentInput = document.getElementById("commentInput");
+    const commentMsg = document.getElementById("commentMsg");
 
     let nickChecked = "";
     let nickAvailable = false;
     let sortMode = "rank";
     let currentWatch = null;
+    let pendingShareScenarioId = null;
     let bracket = [];
     let nextWinners = [];
     let matchIndex = 0;
@@ -1097,6 +1438,49 @@
       return "";
     }
 
+    function buildShareUrl(scenarioId, champion, percent, popular) {
+      const url = new URL(SHARE_URL);
+      url.searchParams.set("s", scenarioId);
+      url.searchParams.set("w", champion);
+      url.searchParams.set("p", String(percent));
+      url.searchParams.set("t", popular ? "popular" : "unique");
+      return url.toString();
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+
+    function renderFeedCommentsHtml(scenarioId) {
+      const list = getCommentsFor(scenarioId).slice(0, 5);
+      if (!list.length) {
+        return '<p class="comment-empty">아직 댓글이 없어요. 첫 댓글을 남겨 보세요.</p>';
+      }
+      return list
+        .map(
+          (c) =>
+            '<article class="comment-item">' +
+            '<p class="who">' +
+            escapeHtml(c.author) +
+            '<span class="when">' +
+            formatCommentTime(c.createdAt) +
+            "</span></p>" +
+            '<p class="body">' +
+            escapeHtml(c.text) +
+            "</p></article>"
+        )
+        .join("");
+    }
+
     function renderFeed() {
       const list = sortedScenarios();
       if (!list.length) {
@@ -1117,10 +1501,14 @@
           const thumbRank = showRank
             ? '<span class="thumb-rank rank-badge ' + rClass + '">' + (i + 1) + "위</span>"
             : "";
+          const commentsLen = getCommentsFor(s.id).length;
           return (
+            '<div class="feed-item" data-id="' +
+            escapeHtml(s.id) +
+            '">' +
             '<article class="card ' +
             cClass +
-            '" data-id="' +
+            '" data-play="' +
             escapeHtml(s.id) +
             '">' +
             '<div class="card-thumb">' +
@@ -1136,19 +1524,66 @@
             "<span>참여 " +
             (s.plays || 0) +
             "</span>" +
+            "<span>댓글 " +
+            commentsLen +
+            "</span>" +
             '<span class="badge">' +
             n +
             "강 토너먼트</span>" +
-            "</p></div></article>"
+            "</p></div></article>" +
+            '<div class="feed-comments">' +
+            '<p class="feed-comments-title">댓글 ' +
+            commentsLen +
+            "개</p>" +
+            '<div class="feed-comment-list">' +
+            renderFeedCommentsHtml(s.id) +
+            "</div>" +
+            '<form class="comment-form feed-comment-form">' +
+            '<textarea rows="2" maxlength="200" placeholder="이 만약에에 댓글 남기기" required></textarea>' +
+            '<p class="msg"></p>' +
+            '<button type="submit" class="primary">댓글 달기</button>' +
+            "</form>" +
+            "</div></div>"
           );
         })
         .join("");
 
-      grid.querySelectorAll(".card").forEach((card) => {
+      grid.querySelectorAll(".card[data-play]").forEach((card) => {
         card.addEventListener("click", () => {
-          const id = card.getAttribute("data-id");
+          const id = card.getAttribute("data-play");
           const scenario = loadScenarios().find((s) => s.id === id);
           if (scenario) openWatch(scenario);
+        });
+      });
+
+      grid.querySelectorAll(".feed-comment-form").forEach((form) => {
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const item = form.closest(".feed-item");
+          const id = item && item.getAttribute("data-id");
+          const msgEl = form.querySelector(".msg");
+          const ta = form.querySelector("textarea");
+          msgEl.textContent = "";
+
+          const username = getSession();
+          if (!username || !getUser(username)) {
+            msgEl.textContent = "댓글도 로그인만 하면 돼요. 약 3초면 끝나요!";
+            authMsg.textContent = "댓글 쓰려면 로그인만 하면 돼요. 약 3초면 끝나요!";
+            openOverlay(authOverlay);
+            return;
+          }
+
+          const text = (ta.value || "").trim();
+          if (!text) {
+            msgEl.textContent = "내용을 적어 주세요.";
+            return;
+          }
+
+          addComment(id, username, text);
+          ta.value = "";
+          renderFeed();
+          if (currentWatch && currentWatch.id === id) renderComments(id);
         });
       });
     }
@@ -1184,6 +1619,31 @@
       choiceB.disabled = false;
       vsWrap.classList.remove("hidden");
       watchResult.classList.add("hidden");
+      shareBox.classList.add("hidden");
+      shareCopied.textContent = "";
+    }
+
+    function renderComments(scenarioId) {
+      const list = getCommentsFor(scenarioId);
+      commentCount.textContent = list.length + "개";
+      if (!list.length) {
+        commentList.innerHTML = '<p class="comment-empty">첫 댓글을 남겨 보세요.</p>';
+        return;
+      }
+      commentList.innerHTML = list
+        .map(
+          (c) =>
+            '<article class="comment-item">' +
+            '<p class="who">' +
+            escapeHtml(c.author) +
+            '<span class="when">' +
+            formatCommentTime(c.createdAt) +
+            "</span></p>" +
+            '<p class="body">' +
+            escapeHtml(c.text) +
+            "</p></article>"
+        )
+        .join("");
     }
 
     function openWatch(scenario) {
@@ -1200,6 +1660,9 @@
 
       watchText.textContent = scenario.text;
       watchAuthor.textContent = scenario.author + " · 토너먼트";
+      commentMsg.textContent = "";
+      commentInput.value = "";
+      renderComments(scenario.id);
       showMatch();
       openOverlay(watchOverlay);
     }
@@ -1210,7 +1673,7 @@
       const username = getSession();
       if (!username || !getUser(username)) {
         closeOverlay(watchOverlay);
-        authMsg.textContent = "참여하려면 로그인해 주세요.";
+        authMsg.textContent = "참여하려면 로그인만 하면 돼요. 닉네임·비밀번호로 약 3초면 끝나요!";
         openOverlay(authOverlay);
         return;
       }
@@ -1225,7 +1688,7 @@
       tournamentDone = true;
       choiceA.disabled = true;
       choiceB.disabled = true;
-      vsWrap.classList.add("hidden");
+      if (vsWrap) vsWrap.classList.add("hidden");
       roundLabel.textContent = "우승";
 
       const username = getSession();
@@ -1270,6 +1733,7 @@
       const vibe = popular
         ? "당신은 대중적인 선택을 했습니다."
         : "당신은 남들과 다른 생각을 가지고 있습니다.";
+      const vibeShort = popular ? "대중적" : "남과 다름";
 
       if (already) {
         watchResult.textContent =
@@ -1300,12 +1764,82 @@
       }
       watchResult.style.whiteSpace = "pre-line";
       watchResult.classList.remove("hidden");
+
+      const shareUrl = buildShareUrl(
+        currentWatch.id,
+        champion,
+        percent,
+        popular
+      );
+      if (shareText) {
+        shareText.textContent =
+          "내 우승: " +
+          champion +
+          "\n같은 선택: " +
+          percent +
+          "% (" +
+          vibeShort +
+          ")\n너도 해봐 → " +
+          shareUrl;
+      }
+      if (shareLinkInput) shareLinkInput.value = shareUrl;
+      if (shareCopied) shareCopied.textContent = "";
+      if (shareBox) shareBox.classList.remove("hidden");
+
       refreshHeader();
       renderFeed();
     }
 
+    copyShareBtn.addEventListener("click", async () => {
+      try {
+        await copyText(shareText.textContent || "");
+        shareCopied.textContent = "문장이 복사됐어요. 단톡에 붙여넣기 하세요!";
+      } catch (err) {
+        shareCopied.textContent = "복사에 실패했어요. 위 문장을 길게 눌러 복사해 주세요.";
+      }
+    });
+
+    copyLinkBtn.addEventListener("click", async () => {
+      try {
+        await copyText(shareLinkInput.value || "");
+        shareCopied.textContent = "공유 링크가 복사됐어요!";
+      } catch (err) {
+        shareCopied.textContent = "링크 복사에 실패했어요. 주소창 링크를 직접 복사해 주세요.";
+      }
+    });
+
     choiceA.addEventListener("click", () => pickWinner("A"));
     choiceB.addEventListener("click", () => pickWinner("B"));
+
+    commentForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      commentMsg.textContent = "";
+
+      if (!currentWatch) return;
+
+      const username = getSession();
+      if (!username || !getUser(username)) {
+        commentMsg.textContent = "댓글도 로그인만 하면 돼요. 약 3초면 끝나요!";
+        authMsg.textContent = "댓글 쓰려면 로그인만 하면 돼요. 약 3초면 끝나요!";
+        openOverlay(authOverlay);
+        return;
+      }
+
+      const text = commentInput.value.trim();
+      if (!text) {
+        commentMsg.textContent = "내용을 적어 주세요.";
+        return;
+      }
+      if (text.length > 200) {
+        commentMsg.textContent = "댓글은 200자까지예요.";
+        return;
+      }
+
+      addComment(currentWatch.id, username, text);
+      commentInput.value = "";
+      renderComments(currentWatch.id);
+      renderFeed();
+    });
 
     authBtn.addEventListener("click", () => {
       const username = getSession();
@@ -1395,7 +1929,7 @@
     createBtn.addEventListener("click", () => {
       const username = getSession();
       if (!username || !getUser(username)) {
-        authMsg.textContent = "생성하려면 먼저 로그인해 주세요.";
+        authMsg.textContent = "만들기 전에 로그인만 해 주세요. 약 3초면 돼요!";
         openOverlay(authOverlay);
         return;
       }
@@ -1460,8 +1994,39 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
+    function handleIncomingShare() {
+      const params = new URLSearchParams(location.search);
+      const id = params.get("s");
+      if (!id) return;
+
+      const scenario = loadScenarios().find((s) => s.id === id);
+      if (!scenario) return;
+
+      const winner = params.get("w") || "";
+      const percent = params.get("p") || "";
+      const tone = params.get("t") === "popular" ? "대중적" : "남과 다름";
+
+      pendingShareScenarioId = id;
+      shareLandingText.innerHTML = winner
+        ? "친구가 <strong>「" +
+          escapeHtml(winner) +
+          "」</strong>를 골랐어요" +
+          (percent ? " · 같은 선택 " + escapeHtml(percent) + "% (" + tone + ")" : "") +
+          "<br />너도 같은 만약에 챌린지를 해보세요."
+        : "친구가 공유한 만약에 챌린지예요. 너도 해보세요.";
+      shareLanding.classList.remove("hidden");
+    }
+
+    shareLandingBtn.addEventListener("click", () => {
+      shareLanding.classList.add("hidden");
+      const id = pendingShareScenarioId;
+      const scenario = loadScenarios().find((s) => s.id === id);
+      if (scenario) openWatch(scenario);
+    });
+
     refreshHeader();
     renderFeed();
+    handleIncomingShare();
   </script>
 </body>
 </html>
