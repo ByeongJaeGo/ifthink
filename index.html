@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ifthink</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #1a1a1a;
+      --muted: rgba(26, 26, 26, 0.55);
+      --line: rgba(26, 26, 26, 0.12);
+      --surface: #f5f5f5;
+      --accent: #b8860b;
+      --danger: #c45c5c;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      font-family: Georgia, "Times New Roman", serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 1.25rem;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .logo {
+      font-size: 1.35rem;
+      letter-spacing: 0.08em;
+      font-weight: 400;
+      text-decoration: none;
+      color: var(--fg);
+      flex-shrink: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .header-actions button,
+    .modal button {
+      font: inherit;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--fg);
+      padding: 0.45rem 0.85rem;
+      font-size: 0.9rem;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+
+    .header-actions button:hover:not(:disabled),
+    .modal button:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .header-actions button.primary,
+    .modal button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .header-actions button.primary:hover:not(:disabled),
+    .modal button.primary:hover:not(:disabled) {
+      color: var(--bg);
+      filter: brightness(1.05);
+    }
+
+    .header-actions button:disabled,
+    .modal button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .user-chip {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-right: 0.25rem;
+    }
+
+    .notice {
+      text-align: center;
+      padding: 0.85rem 1.25rem;
+      font-size: 0.95rem;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+      line-height: 1.45;
+    }
+
+    .notice strong {
+      color: var(--fg);
+      font-weight: 400;
+    }
+
+    .main {
+      width: min(960px, 100%);
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 3rem;
+    }
+
+    .feed-title {
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    .sort-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .sort-bar button {
+      font: inherit;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      padding: 0.4rem 0.9rem;
+      font-size: 0.9rem;
+    }
+
+    .sort-bar button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .sort-bar button.active {
+      border-color: var(--fg);
+      color: var(--fg);
+      background: var(--surface);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s;
+      text-align: left;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .card-thumb {
+      aspect-ratio: 16 / 9;
+      background: linear-gradient(145deg, #eeeeee 0%, #f7f7f7 55%, #e8e8e8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--line);
+      position: relative;
+    }
+
+    .card-thumb span {
+      font-size: 1.05rem;
+      line-height: 1.4;
+      text-align: center;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-meta {
+      padding: 0.85rem 1rem 1rem;
+    }
+
+    .card-meta .meta-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+
+    .card-meta .author { color: var(--fg); }
+
+    .badge {
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      border: 1px solid var(--line);
+      padding: 0.1rem 0.35rem;
+      color: var(--muted);
+    }
+
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.6rem;
+      padding: 0.15rem 0.45rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.02em;
+      border: 1px solid var(--line);
+      line-height: 1.2;
+    }
+
+    .rank-badge.rank-1 {
+      background: #1a1a1a;
+      color: #f0d78c;
+      border-color: #1a1a1a;
+      font-size: 0.9rem;
+      min-width: 3rem;
+      padding: 0.25rem 0.55rem;
+    }
+
+    .rank-badge.rank-2 {
+      background: #3a3f46;
+      color: #e8eaed;
+      border-color: #3a3f46;
+      font-size: 0.85rem;
+    }
+
+    .rank-badge.rank-3 {
+      background: #6b4a2e;
+      color: #f3d5b5;
+      border-color: #6b4a2e;
+      font-size: 0.85rem;
+    }
+
+    .rank-badge.rank-4 {
+      background: #eef2f6;
+      color: #3d4a5c;
+      border-color: #c5d0dc;
+    }
+
+    .rank-badge.rank-low {
+      background: transparent;
+      color: var(--muted);
+      border-style: dashed;
+    }
+
+    .card.rank-card-1 {
+      border-color: #1a1a1a;
+      box-shadow: 0 0 0 1px #1a1a1a;
+    }
+
+    .card.rank-card-2 {
+      border-color: #3a3f46;
+    }
+
+    .card.rank-card-3 {
+      border-color: #6b4a2e;
+    }
+
+    .card-thumb {
+      position: relative;
+    }
+
+    .thumb-rank {
+      position: absolute;
+      top: 0.55rem;
+      left: 0.55rem;
+      z-index: 1;
+    }
+
+    .nick-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+      margin-bottom: 1rem;
+    }
+
+    .nick-row input {
+      flex: 1;
+      margin-bottom: 0 !important;
+    }
+
+    .nick-row button {
+      flex: 0 0 auto;
+      white-space: nowrap;
+      padding: 0.45rem 0.7rem;
+      font-size: 0.8rem;
+    }
+
+    .msg.ok { color: #2a7a4b; }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .overlay.hidden { display: none; }
+
+    .modal {
+      width: min(400px, 100%);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      padding: 1.5rem;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal.wide { width: min(480px, 100%); }
+
+    .modal h2 {
+      font-size: 1.25rem;
+      font-weight: 400;
+      margin-bottom: 0.35rem;
+    }
+
+    .modal .hint {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+      margin-bottom: 1.25rem;
+    }
+
+    .modal label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .modal input,
+    .modal textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--line);
+      color: var(--fg);
+      font: inherit;
+      font-size: 1rem;
+      padding: 0.5rem 0;
+      outline: none;
+      margin-bottom: 1rem;
+      resize: vertical;
+    }
+
+    .modal input:focus,
+    .modal textarea:focus {
+      border-bottom-color: var(--accent);
+    }
+
+    .modal .msg {
+      color: var(--danger);
+      font-size: 0.85rem;
+      min-height: 1.2em;
+      margin-bottom: 0.75rem;
+    }
+
+    .modal .row {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .modal .row button { flex: 1; }
+
+    .modal .close-x {
+      float: right;
+      border: none;
+      padding: 0;
+      font-size: 1.25rem;
+      color: var(--muted);
+      line-height: 1;
+      width: auto;
+    }
+
+    .modal .close-x:hover {
+      color: var(--fg);
+      border: none;
+    }
+
+    .watch-modal { width: min(560px, 100%); }
+
+    .round-label {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      margin-bottom: 0.35rem;
+    }
+
+    .watch-q {
+      font-size: 1.2rem;
+      line-height: 1.45;
+      font-weight: 400;
+      margin: 0.5rem 0 1.25rem;
+      text-align: center;
+    }
+
+    .vs-wrap {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.6rem;
+      align-items: stretch;
+    }
+
+    .vs-wrap .pick {
+      min-height: 7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 1rem 0.75rem;
+      line-height: 1.4;
+      white-space: normal;
+    }
+
+    .vs-mark {
+      align-self: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+    }
+
+    .watch-result {
+      text-align: center;
+      color: var(--accent);
+      margin-top: 1.1rem;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+    .watch-result.hidden { display: none; }
+
+    .option-list label { margin-top: 0.35rem; }
+
+    .option-guide {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.45;
+      margin: 0.25rem 0 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .option-item {
+      display: grid;
+      grid-template-columns: 2.5rem 1fr;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.65rem;
+    }
+
+    .option-item .num {
+      font-size: 0.85rem;
+      color: var(--accent);
+      text-align: center;
+    }
+
+    .option-item input {
+      margin-bottom: 0 !important;
+    }
+
+    .option-list-title {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <a href="/" class="logo" id="logoLink">ifthink</a>
+    <div class="header-actions">
+      <span class="user-chip hidden" id="userChip"></span>
+      <button type="button" id="createBtn">만약에 상황 생성하기</button>
+      <button type="button" class="primary" id="authBtn">로그인</button>
+    </div>
+  </header>
+
+  <p class="notice">로그인하고 <strong>참여 1번</strong> 하면 만약에 상황을 개시할 수 있습니다.</p>
+
+  <main class="main">
+    <p class="feed-title">만약에 상황</p>
+    <div class="sort-bar" role="tablist" aria-label="정렬">
+      <button type="button" class="active" data-sort="rank">랭킹순</button>
+      <button type="button" data-sort="latest">최신순</button>
+    </div>
+    <div class="grid" id="grid"></div>
+    <p class="empty hidden" id="empty">아직 공개된 만약에가 없습니다.</p>
+  </main>
+
+  <div class="overlay hidden" id="authOverlay">
+    <div class="modal">
+      <button type="button" class="close-x" data-close="authOverlay" aria-label="닫기">×</button>
+      <h2>로그인</h2>
+      <p class="hint">닉네임과 비밀번호만으로 가입·로그인합니다.</p>
+      <form id="authForm">
+        <label for="username">닉네임</label>
+        <div class="nick-row">
+          <input id="username" required minlength="2" maxlength="20" autocomplete="username" placeholder="예: 사과파이" />
+          <button type="button" id="checkNickBtn">중복확인</button>
+        </div>
+        <label for="password">비밀번호</label>
+        <input id="password" type="password" required minlength="4" maxlength="40" autocomplete="current-password" />
+        <p class="msg" id="authMsg"></p>
+        <div class="row">
+          <button type="submit" class="primary">로그인</button>
+          <button type="button" id="signupBtn">회원가입</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="createOverlay">
+    <div class="modal wide">
+      <button type="button" class="close-x" data-close="createOverlay" aria-label="닫기">×</button>
+      <h2>토너먼트 개시</h2>
+      <p class="hint" id="createHint">질문 1개 + 답 8개를 쓰면, 사람들이 이상형 월드컵처럼 골라 나갑니다.</p>
+      <form id="createForm">
+        <label for="newScenario">질문 (만약에 상황)</label>
+        <textarea id="newScenario" rows="2" maxlength="120" placeholder="예: 만약에 전 애인이 다시 만나자고 한다면?" required></textarea>
+
+        <p class="option-list-title">사람들이 고를 답 8개</p>
+        <p class="option-guide">
+          여기에 적은 8개가 서로 VS로 붙습니다.<br />
+          예: 「바로 만난다」「읽씹한다」「거절한다」…
+        </p>
+        <div class="option-list" id="optionInputs"></div>
+        <p class="msg" id="createMsg"></p>
+        <button type="submit" class="primary" id="createSubmit">개시하기</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="watchOverlay">
+    <div class="modal watch-modal">
+      <button type="button" class="close-x" data-close="watchOverlay" aria-label="닫기">×</button>
+      <p class="hint" id="watchAuthor"></p>
+      <p class="round-label" id="roundLabel">8강</p>
+      <h2 class="watch-q" id="watchText"></h2>
+      <div class="vs-wrap" id="vsWrap">
+        <button type="button" class="pick" id="choiceA"></button>
+        <span class="vs-mark">VS</span>
+        <button type="button" class="pick" id="choiceB"></button>
+      </div>
+      <p class="watch-result hidden" id="watchResult"></p>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_USERS = "ifthink_users_v2";
+    const STORAGE_SESSION = "ifthink_session_v2";
+    const STORAGE_SCENARIOS = "ifthink_scenarios_v7";
+
+    const SEED = [
+      {
+        id: "seed-ex-1",
+        text: "만약에 전 애인이 ‘다시 만나자’고 연락해 온다면?",
+        options: [
+          "바로 만난다",
+          "읽씹하고 끝낸다",
+          "차갑게 거절한다",
+          "이유부터 따진다",
+          "친구로만 만나자고 한다",
+          "며칠 뒤에 답한다",
+          "복수하듯 튕긴다",
+          "울면서 다시 사귀자고 한다"
+        ],
+        wins: {
+          "바로 만난다": 8,
+          "읽씹하고 끝낸다": 11,
+          "차갑게 거절한다": 6,
+          "이유부터 따진다": 5,
+          "친구로만 만나자고 한다": 4,
+          "며칠 뒤에 답한다": 3,
+          "복수하듯 튕긴다": 3,
+          "울면서 다시 사귀자고 한다": 2
+        },
+        author: "사과파이",
+        plays: 42,
+        createdAt: Date.now() - 500000
+      },
+      {
+        id: "seed-ex-2",
+        text: "만약에 좋아하는 사람이 내 친구와 사귄다면?",
+        options: [
+          "솔직히 말하고 싸운다",
+          "아무 말 없이 거리를 둔다",
+          "축하해 주고 잊으려 한다",
+          "둘 다 끊는다",
+          "친구에게만 따진다",
+          "그 사람에게만 고백한다",
+          "술 마시고 털어놓는다",
+          "몰래 이간질한다"
+        ],
+        wins: {
+          "솔직히 말하고 싸운다": 9,
+          "아무 말 없이 거리를 둔다": 14,
+          "축하해 주고 잊으려 한다": 10,
+          "둘 다 끊는다": 8,
+          "친구에게만 따진다": 7,
+          "그 사람에게만 고백한다": 6,
+          "술 마시고 털어놓는다": 4,
+          "몰래 이간질한다": 3
+        },
+        author: "지나가던 아저씨",
+        plays: 61,
+        createdAt: Date.now() - 400000
+      },
+      {
+        id: "seed-ex-3",
+        text: "만약에 하룻밤만 아무도 모르게 바람쳐도 된다면?",
+        options: [
+          "한다",
+          "안 한다",
+          "거의 할 뻔하다 멈춘다",
+          "상대만 고르고 망설인다",
+          "상상만 하고 참는다",
+          "하고 나서 바로 후회한다",
+          "조건이 있으면 한다",
+          "들킬 것 같아서 안 한다"
+        ],
+        wins: {
+          "한다": 18,
+          "안 한다": 22,
+          "거의 할 뻔하다 멈춘다": 12,
+          "상대만 고르고 망설인다": 9,
+          "상상만 하고 참는다": 10,
+          "하고 나서 바로 후회한다": 7,
+          "조건이 있으면 한다": 6,
+          "들킬 것 같아서 안 한다": 4
+        },
+        author: "불당동 솜주먹",
+        plays: 88,
+        createdAt: Date.now() - 300000
+      },
+      {
+        id: "seed-ex-4",
+        text: "만약에 지금 연인이 ‘나보다 전 애인이 더 좋았다’고 말한다면?",
+        options: [
+          "바로 헤어진다",
+          "참고 이유를 묻는다",
+          "울면서 따진다",
+          "똑같이 상처 주는 말을 한다",
+          "침묵하고 자리를 뜬다",
+          "농담으로 넘기려 한다",
+          "전 애인 얘기를 캐묻는다",
+          "복수하듯 헤어진다"
+        ],
+        wins: {
+          "바로 헤어진다": 16,
+          "참고 이유를 묻는다": 12,
+          "울면서 따진다": 7,
+          "똑같이 상처 주는 말을 한다": 5,
+          "침묵하고 자리를 뜬다": 6,
+          "농담으로 넘기려 한다": 3,
+          "전 애인 얘기를 캐묻는다": 3,
+          "복수하듯 헤어진다": 3
+        },
+        author: "새벽감성",
+        plays: 55,
+        createdAt: Date.now() - 200000
+      },
+      {
+        id: "seed-ex-5",
+        text: "만약에 마음에 드는 사람에게 고백했는데 ‘친구로 지내자’면?",
+        options: [
+          "친구로 남는다",
+          "그 자리에서 관계를 끊는다",
+          "시간을 두고 다시 다가간다",
+          "겉으론 웃고 속으로 정리한다",
+          "이유를 집요하게 묻는다",
+          "다른 사람을 바로 만난다",
+          "친구 관계는 유지하되 마음만 접는다",
+          "자존심 상해서 먼저 차단한다"
+        ],
+        wins: {
+          "친구로 남는다": 8,
+          "그 자리에서 관계를 끊는다": 7,
+          "시간을 두고 다시 다가간다": 5,
+          "겉으론 웃고 속으로 정리한다": 6,
+          "이유를 집요하게 묻는다": 3,
+          "다른 사람을 바로 만난다": 3,
+          "친구 관계는 유지하되 마음만 접는다": 3,
+          "자존심 상해서 먼저 차단한다": 2
+        },
+        author: "퇴근버스",
+        plays: 37,
+        createdAt: Date.now() - 100000
+      },
+      {
+        id: "seed-ex-6",
+        text: "만약에 지금 연애 중인 사람이 다른 사람과 스킨십하는 걸 목격한다면?",
+        options: [
+          "그 자리에서 따진다",
+          "몰래 찍고 헤어진다",
+          "아무 말 없이 돌아선다",
+          "상대에게만 복수한다",
+          "울면서 매달린다",
+          "바로 차단하고 끝낸다",
+          "이유를 듣고 판단한다",
+          "똑같이 바람으로 갚는다"
+        ],
+        wins: {
+          "그 자리에서 따진다": 14,
+          "몰래 찍고 헤어진다": 11,
+          "아무 말 없이 돌아선다": 9,
+          "상대에게만 복수한다": 6,
+          "울면서 매달린다": 4,
+          "바로 차단하고 끝낸다": 12,
+          "이유를 듣고 판단한다": 8,
+          "똑같이 바람으로 갚는다": 5
+        },
+        author: "혼밥요정",
+        plays: 69,
+        createdAt: Date.now() - 90000
+      },
+      {
+        id: "seed-ex-7",
+        text: "만약에 돈 100억과 지금 가장 사랑하는 사람 중 하나만 가질 수 있다면?",
+        options: [
+          "100억을 고른다",
+          "사랑하는 사람을 고른다",
+          "사람 고르고 돈은 포기한다",
+          "돈 고르고 나중에 새 연애를 한다",
+          "둘 다 못 고르면 차라리 거절한다",
+          "사람 고르되 조건을 건다",
+          "돈으로 그 사람을 지키려 한다",
+          "지금 답하지 못하고 도망친다"
+        ],
+        wins: {
+          "100억을 고른다": 16,
+          "사랑하는 사람을 고른다": 22,
+          "사람 고르고 돈은 포기한다": 8,
+          "돈 고르고 나중에 새 연애를 한다": 10,
+          "둘 다 못 고르면 차라리 거절한다": 3,
+          "사람 고르되 조건을 건다": 5,
+          "돈으로 그 사람을 지키려 한다": 7,
+          "지금 답하지 못하고 도망친다": 4
+        },
+        author: "옥상흡연",
+        plays: 75,
+        createdAt: Date.now() - 80000
+      },
+      {
+        id: "seed-ex-8",
+        text: "만약에 내일 내 가장 부끄러운 비밀이 모든 사람에게 공개된다면?",
+        options: [
+          "미리 자백하고 선수를 친다",
+          "잠적한다",
+          "부정하고 버틴다",
+          "관계되는 사람만 먼저 만난다",
+          "해명문을 쓴다",
+          "그냥 맞는다",
+          "폭로한 사람을 찾아낸다",
+          "새로운 도시로 떠난다"
+        ],
+        wins: {
+          "미리 자백하고 선수를 친다": 13,
+          "잠적한다": 10,
+          "부정하고 버틴다": 6,
+          "관계되는 사람만 먼저 만난다": 12,
+          "해명문을 쓴다": 8,
+          "그냥 맞는다": 5,
+          "폭로한 사람을 찾아낸다": 7,
+          "새로운 도시로 떠난다": 4
+        },
+        author: "비오는날",
+        plays: 65,
+        createdAt: Date.now() - 70000
+      },
+      {
+        id: "seed-ex-9",
+        text: "만약에 나를 배신한 친구를 한 방에 끝낼 증거가 생긴다면?",
+        options: [
+          "바로 폭로한다",
+          "협박만 하고 참는다",
+          "증거로 사과를 받는다",
+          "조용히 관계를 끊는다",
+          "똑같이 배신한다",
+          "법적으로 간다",
+          "주변 사람에게만 알린다",
+          "증거를 버리고 놓아준다"
+        ],
+        wins: {
+          "바로 폭로한다": 15,
+          "협박만 하고 참는다": 6,
+          "증거로 사과를 받는다": 11,
+          "조용히 관계를 끊는다": 9,
+          "똑같이 배신한다": 5,
+          "법적으로 간다": 10,
+          "주변 사람에게만 알린다": 7,
+          "증거를 버리고 놓아준다": 3
+        },
+        author: "편의점알바",
+        plays: 66,
+        createdAt: Date.now() - 60000
+      },
+      {
+        id: "seed-ex-10",
+        text: "만약에 지구 마지막 날, 단 한 사람과만 밤을 보내야 한다면?",
+        options: [
+          "지금 연인",
+          "첫사랑",
+          "가족 중 한 명",
+          "가장 친한 친구",
+          "한 번도 고백 못 한 사람",
+          "혼자 있는다",
+          "아무나 옆에 있는 사람",
+          "원수와 끝까지 따진다"
+        ],
+        wins: {
+          "지금 연인": 18,
+          "첫사랑": 9,
+          "가족 중 한 명": 14,
+          "가장 친한 친구": 8,
+          "한 번도 고백 못 한 사람": 11,
+          "혼자 있는다": 7,
+          "아무나 옆에 있는 사람": 3,
+          "원수와 끝까지 따진다": 2
+        },
+        author: "야식러버",
+        plays: 72,
+        createdAt: Date.now() - 50000
+      }
+    ];
+
+    function loadUsers() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_USERS) || "{}"); }
+      catch { return {}; }
+    }
+    function saveUsers(users) {
+      localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+    }
+    function loadScenarios() {
+      try {
+        const raw = localStorage.getItem(STORAGE_SCENARIOS);
+        if (!raw) {
+          localStorage.setItem(STORAGE_SCENARIOS, JSON.stringify(SEED));
+          return SEED.slice();
+        }
+        return JSON.parse(raw);
+      } catch {
+        return SEED.slice();
+      }
+    }
+    function saveScenarios(list) {
+      localStorage.setItem(STORAGE_SCENARIOS, JSON.stringify(list));
+    }
+    function getSession() {
+      return localStorage.getItem(STORAGE_SESSION);
+    }
+    function setSession(username) {
+      if (username) localStorage.setItem(STORAGE_SESSION, username);
+      else localStorage.removeItem(STORAGE_SESSION);
+    }
+    function getUser(username) {
+      return loadUsers()[username] || null;
+    }
+    function updateUser(username, patch) {
+      const users = loadUsers();
+      users[username] = { ...users[username], ...patch };
+      saveUsers(users);
+      return users[username];
+    }
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    function roundName(size) {
+      if (size >= 16) return "16강";
+      if (size === 8) return "8강";
+      if (size === 4) return "4강";
+      if (size === 2) return "결승";
+      return size + "강";
+    }
+    function normalizeOptions(scenario) {
+      if (Array.isArray(scenario.options) && scenario.options.length >= 2) {
+        return scenario.options.filter(Boolean);
+      }
+      if (scenario.a && scenario.b) return [scenario.a, scenario.b];
+      return [];
+    }
+
+    const grid = document.getElementById("grid");
+    const empty = document.getElementById("empty");
+    const authBtn = document.getElementById("authBtn");
+    const createBtn = document.getElementById("createBtn");
+    const userChip = document.getElementById("userChip");
+    const authOverlay = document.getElementById("authOverlay");
+    const createOverlay = document.getElementById("createOverlay");
+    const watchOverlay = document.getElementById("watchOverlay");
+    const authForm = document.getElementById("authForm");
+    const authMsg = document.getElementById("authMsg");
+    const signupBtn = document.getElementById("signupBtn");
+    const checkNickBtn = document.getElementById("checkNickBtn");
+    const usernameInput = document.getElementById("username");
+    const createForm = document.getElementById("createForm");
+    const createMsg = document.getElementById("createMsg");
+    const createHint = document.getElementById("createHint");
+    const createSubmit = document.getElementById("createSubmit");
+    const optionInputs = document.getElementById("optionInputs");
+    const watchText = document.getElementById("watchText");
+    const watchAuthor = document.getElementById("watchAuthor");
+    const roundLabel = document.getElementById("roundLabel");
+    const choiceA = document.getElementById("choiceA");
+    const choiceB = document.getElementById("choiceB");
+    const watchResult = document.getElementById("watchResult");
+    const vsWrap = document.getElementById("vsWrap");
+
+    let nickChecked = "";
+    let nickAvailable = false;
+    let sortMode = "rank";
+    let currentWatch = null;
+    let bracket = [];
+    let nextWinners = [];
+    let matchIndex = 0;
+    let tournamentDone = false;
+
+    const OPTION_EXAMPLES = [
+      "바로 만난다",
+      "읽씹하고 끝낸다",
+      "차갑게 거절한다",
+      "이유부터 따진다",
+      "친구로만 만나자고 한다",
+      "며칠 뒤에 답한다",
+      "복수하듯 튕긴다",
+      "울면서 다시 사귄다"
+    ];
+
+    for (let i = 1; i <= 8; i++) {
+      const row = document.createElement("div");
+      row.className = "option-item";
+
+      const num = document.createElement("span");
+      num.className = "num";
+      num.textContent = i + "번";
+
+      const inp = document.createElement("input");
+      inp.id = "opt" + i;
+      inp.maxLength = 40;
+      inp.required = true;
+      inp.placeholder = "예: " + OPTION_EXAMPLES[i - 1];
+      inp.setAttribute("aria-label", i + "번 답");
+
+      row.appendChild(num);
+      row.appendChild(inp);
+      optionInputs.appendChild(row);
+    }
+
+    function openOverlay(el) { el.classList.remove("hidden"); }
+    function closeOverlay(el) { el.classList.add("hidden"); }
+
+    document.querySelectorAll("[data-close]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        closeOverlay(document.getElementById(btn.getAttribute("data-close")));
+      });
+    });
+
+    [authOverlay, createOverlay, watchOverlay].forEach((overlay) => {
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) closeOverlay(overlay);
+      });
+    });
+
+    function refreshHeader() {
+      const username = getSession();
+      const user = username ? getUser(username) : null;
+      if (user) {
+        userChip.textContent = username + " · 참여 " + Math.min(user.participations || 0, 1) + "/1";
+        userChip.classList.remove("hidden");
+        authBtn.textContent = "로그아웃";
+      } else {
+        userChip.classList.add("hidden");
+        authBtn.textContent = "로그인";
+      }
+    }
+
+    function sortedScenarios() {
+      const list = loadScenarios().slice();
+      if (sortMode === "latest") {
+        return list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      }
+      return list.sort((a, b) => {
+        const playDiff = (b.plays || 0) - (a.plays || 0);
+        if (playDiff !== 0) return playDiff;
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
+    }
+
+    function rankClass(i) {
+      if (i === 0) return "rank-1";
+      if (i === 1) return "rank-2";
+      if (i === 2) return "rank-3";
+      if (i === 3) return "rank-4";
+      return "rank-low";
+    }
+
+    function cardRankClass(i) {
+      if (i === 0) return "rank-card-1";
+      if (i === 1) return "rank-card-2";
+      if (i === 2) return "rank-card-3";
+      return "";
+    }
+
+    function renderFeed() {
+      const list = sortedScenarios();
+      if (!list.length) {
+        grid.innerHTML = "";
+        empty.classList.remove("hidden");
+        return;
+      }
+      empty.classList.add("hidden");
+      grid.innerHTML = list
+        .map((s, i) => {
+          const n = normalizeOptions(s).length;
+          const showRank = sortMode === "rank";
+          const rClass = rankClass(i);
+          const cClass = showRank ? cardRankClass(i) : "";
+          const rankHtml = showRank
+            ? '<span class="rank-badge ' + rClass + '">' + (i + 1) + "위</span>"
+            : "";
+          const thumbRank = showRank
+            ? '<span class="thumb-rank rank-badge ' + rClass + '">' + (i + 1) + "위</span>"
+            : "";
+          return (
+            '<article class="card ' +
+            cClass +
+            '" data-id="' +
+            escapeHtml(s.id) +
+            '">' +
+            '<div class="card-thumb">' +
+            thumbRank +
+            "<span>" +
+            escapeHtml(s.text) +
+            "</span></div>" +
+            '<div class="card-meta"><p class="meta-row">' +
+            rankHtml +
+            '<span class="author">' +
+            escapeHtml(s.author) +
+            "</span>" +
+            "<span>참여 " +
+            (s.plays || 0) +
+            "</span>" +
+            '<span class="badge">' +
+            n +
+            "강 토너먼트</span>" +
+            "</p></div></article>"
+          );
+        })
+        .join("");
+
+      grid.querySelectorAll(".card").forEach((card) => {
+        card.addEventListener("click", () => {
+          const id = card.getAttribute("data-id");
+          const scenario = loadScenarios().find((s) => s.id === id);
+          if (scenario) openWatch(scenario);
+        });
+      });
+    }
+
+    document.querySelectorAll(".sort-bar button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        sortMode = btn.getAttribute("data-sort");
+        document.querySelectorAll(".sort-bar button").forEach((b) => {
+          b.classList.toggle("active", b === btn);
+        });
+        renderFeed();
+      });
+    });
+
+    function showMatch() {
+      if (tournamentDone) return;
+      if (matchIndex >= bracket.length) {
+        if (nextWinners.length === 1) {
+          finishTournament(nextWinners[0]);
+          return;
+        }
+        bracket = nextWinners.slice();
+        nextWinners = [];
+        matchIndex = 0;
+      }
+
+      roundLabel.textContent = roundName(bracket.length);
+      const left = bracket[matchIndex];
+      const right = bracket[matchIndex + 1];
+      choiceA.textContent = left;
+      choiceB.textContent = right;
+      choiceA.disabled = false;
+      choiceB.disabled = false;
+      vsWrap.classList.remove("hidden");
+      watchResult.classList.add("hidden");
+    }
+
+    function openWatch(scenario) {
+      const opts = normalizeOptions(scenario);
+      if (opts.length < 2) return;
+
+      currentWatch = scenario;
+      tournamentDone = false;
+      bracket = shuffle(opts);
+      // ensure even count by dropping last if odd
+      if (bracket.length % 2 === 1) bracket.pop();
+      nextWinners = [];
+      matchIndex = 0;
+
+      watchText.textContent = scenario.text;
+      watchAuthor.textContent = scenario.author + " · 토너먼트";
+      showMatch();
+      openOverlay(watchOverlay);
+    }
+
+    function pickWinner(side) {
+      if (tournamentDone || !currentWatch) return;
+
+      const username = getSession();
+      if (!username || !getUser(username)) {
+        closeOverlay(watchOverlay);
+        authMsg.textContent = "참여하려면 로그인해 주세요.";
+        openOverlay(authOverlay);
+        return;
+      }
+
+      const winner = side === "A" ? bracket[matchIndex] : bracket[matchIndex + 1];
+      nextWinners.push(winner);
+      matchIndex += 2;
+      showMatch();
+    }
+
+    function finishTournament(champion) {
+      tournamentDone = true;
+      choiceA.disabled = true;
+      choiceB.disabled = true;
+      vsWrap.classList.add("hidden");
+      roundLabel.textContent = "우승";
+
+      const username = getSession();
+      const user = getUser(username);
+      const doneIds = user.doneIds || [];
+      const already = doneIds.includes(currentWatch.id);
+
+      const list = loadScenarios();
+      const idx = list.findIndex((s) => s.id === currentWatch.id);
+      let sameCount = 0;
+      let total = 0;
+
+      if (idx >= 0) {
+        const item = { ...list[idx] };
+        const wins = { ...(item.wins || {}) };
+
+        if (!already) {
+          wins[champion] = (wins[champion] || 0) + 1;
+          item.wins = wins;
+          item.plays = (item.plays || 0) + 1;
+          list[idx] = item;
+          saveScenarios(list);
+
+          updateUser(username, {
+            doneIds: [...doneIds, currentWatch.id],
+            participations: (user.participations || 0) + 1
+          });
+        } else {
+          // already counted before; read current tallies
+          item.wins = wins;
+        }
+
+        sameCount = (list[idx].wins && list[idx].wins[champion]) || 0;
+        total = list[idx].plays || 0;
+        currentWatch = list[idx];
+      }
+
+      const percent = total > 0 ? Math.round((sameCount / total) * 100) : 0;
+      const others = Math.max(0, sameCount - 1);
+      // 8개 답 기준 균등 몫(약 12%)보다 확실히 높으면 대중적
+      const popular = percent >= 25;
+      const vibe = popular
+        ? "당신은 대중적인 선택을 했습니다."
+        : "당신은 남들과 다른 생각을 가지고 있습니다.";
+
+      if (already) {
+        watchResult.textContent =
+          "이미 참여한 토너먼트입니다.\n우승: 「" +
+          champion +
+          "」\n같은 선택 " +
+          sameCount +
+          "명 / 전체 " +
+          total +
+          "명 (" +
+          percent +
+          "%)\n" +
+          vibe;
+      } else {
+        watchResult.textContent =
+          "우승: 「" +
+          champion +
+          "」\n당신과 같은 선택: 나 포함 " +
+          sameCount +
+          "명 (다른 사람 " +
+          others +
+          "명)\n전체 참여자 " +
+          total +
+          "명 중 " +
+          percent +
+          "%\n" +
+          vibe;
+      }
+      watchResult.style.whiteSpace = "pre-line";
+      watchResult.classList.remove("hidden");
+      refreshHeader();
+      renderFeed();
+    }
+
+    choiceA.addEventListener("click", () => pickWinner("A"));
+    choiceB.addEventListener("click", () => pickWinner("B"));
+
+    authBtn.addEventListener("click", () => {
+      const username = getSession();
+      if (username && getUser(username)) {
+        setSession(null);
+        refreshHeader();
+        return;
+      }
+      authMsg.textContent = "";
+      authMsg.classList.remove("ok");
+      authForm.reset();
+      nickChecked = "";
+      nickAvailable = false;
+      openOverlay(authOverlay);
+    });
+
+    function normalizeNick(raw) {
+      return String(raw || "").trim();
+    }
+
+    checkNickBtn.addEventListener("click", () => {
+      const nick = normalizeNick(usernameInput.value);
+      authMsg.classList.remove("ok");
+      if (nick.length < 2) {
+        authMsg.textContent = "닉네임은 2자 이상이어야 합니다.";
+        nickChecked = "";
+        nickAvailable = false;
+        return;
+      }
+      if (getUser(nick)) {
+        authMsg.textContent = "이미 사용 중인 닉네임입니다.";
+        nickChecked = nick;
+        nickAvailable = false;
+        return;
+      }
+      authMsg.textContent = "사용 가능한 닉네임입니다.";
+      authMsg.classList.add("ok");
+      nickChecked = nick;
+      nickAvailable = true;
+    });
+
+    usernameInput.addEventListener("input", () => {
+      nickChecked = "";
+      nickAvailable = false;
+      authMsg.classList.remove("ok");
+    });
+
+    authForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      authMsg.classList.remove("ok");
+      const username = normalizeNick(usernameInput.value);
+      const password = document.getElementById("password").value;
+      const user = getUser(username);
+      if (!user || user.password !== password) {
+        authMsg.textContent = "닉네임 또는 비밀번호가 맞지 않습니다.";
+        return;
+      }
+      setSession(username);
+      closeOverlay(authOverlay);
+      refreshHeader();
+    });
+
+    signupBtn.addEventListener("click", () => {
+      authMsg.classList.remove("ok");
+      const username = normalizeNick(usernameInput.value);
+      const password = document.getElementById("password").value;
+      if (username.length < 2 || password.length < 4) {
+        authMsg.textContent = "닉네임 2자 이상, 비밀번호 4자 이상으로 적어 주세요.";
+        return;
+      }
+      if (nickChecked !== username || !nickAvailable) {
+        authMsg.textContent = "먼저 닉네임 중복확인을 해 주세요.";
+        return;
+      }
+      const users = loadUsers();
+      if (users[username]) {
+        authMsg.textContent = "이미 사용 중인 닉네임입니다.";
+        return;
+      }
+      users[username] = { password, participations: 0, doneIds: [] };
+      saveUsers(users);
+      setSession(username);
+      closeOverlay(authOverlay);
+      refreshHeader();
+    });
+
+    createBtn.addEventListener("click", () => {
+      const username = getSession();
+      if (!username || !getUser(username)) {
+        authMsg.textContent = "생성하려면 먼저 로그인해 주세요.";
+        openOverlay(authOverlay);
+        return;
+      }
+      const user = getUser(username);
+      const left = Math.max(0, 1 - (user.participations || 0));
+      createMsg.textContent = "";
+      createForm.reset();
+      if (left > 0) {
+        createHint.textContent =
+          "아직 1번 더 참여해야 개시할 수 있습니다. (현재 " +
+          (user.participations || 0) +
+          "/1)";
+        createSubmit.disabled = true;
+      } else {
+        createHint.textContent = "질문 1개 + 답 8개를 쓰면, 사람들이 이상형 월드컵처럼 골라 나갑니다.";
+        createSubmit.disabled = false;
+      }
+      openOverlay(createOverlay);
+    });
+
+    createForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const username = getSession();
+      const user = username ? getUser(username) : null;
+      if (!user || (user.participations || 0) < 1) {
+        createMsg.textContent = "1번 참여한 뒤에만 개시할 수 있습니다.";
+        return;
+      }
+
+      const text = document.getElementById("newScenario").value.trim();
+      const options = [];
+      for (let i = 1; i <= 8; i++) {
+        const v = document.getElementById("opt" + i).value.trim();
+        if (v) options.push(v);
+      }
+
+      if (!text || options.length !== 8) {
+        createMsg.textContent = "질문과 답 8개를 모두 적어 주세요.";
+        return;
+      }
+
+      const wins = {};
+      options.forEach((o) => { wins[o] = 0; });
+
+      const list = loadScenarios();
+      list.push({
+        id: "user-" + Date.now(),
+        text,
+        options,
+        wins,
+        author: username,
+        plays: 0,
+        createdAt: Date.now()
+      });
+      saveScenarios(list);
+      closeOverlay(createOverlay);
+      renderFeed();
+    });
+
+    document.getElementById("logoLink").addEventListener("click", (e) => {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    refreshHeader();
+    renderFeed();
+  </script>
+</body>
+</html>
