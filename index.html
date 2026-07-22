@@ -199,57 +199,21 @@
     }
 
     .grid {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
     }
 
-    .feed-item {
-      border: 1px solid var(--line);
-      background: #fff;
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
-    .feed-item .card {
-      border: none;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .feed-comments {
-      padding: 0.9rem 1rem 1rem;
-      background: #fafafa;
-      border-top: 1px dashed var(--line);
-    }
-
-    .feed-comments .feed-comments-title {
-      font-size: 0.85rem;
-      color: var(--fg);
-      margin-bottom: 0.65rem;
-      font-weight: 400;
-    }
-
-    .share-box {
-      margin-top: 1.1rem;
-      padding: 1rem;
-      border: 1px solid var(--accent);
-      background: #fffdf6;
-      text-align: left;
-    }
-
-    .feed-comment-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.55rem;
-      max-height: 160px;
-      overflow-y: auto;
-      margin-bottom: 0.7rem;
-    }
-
-    .feed-comments .comment-form textarea {
-      margin-bottom: 0.45rem;
-    }
-
-    .feed-comments .comment-form button {
-      width: 100%;
+    @media (max-width: 560px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     .share-landing {
@@ -1460,27 +1424,6 @@
       document.body.removeChild(ta);
     }
 
-    function renderFeedCommentsHtml(scenarioId) {
-      const list = getCommentsFor(scenarioId).slice(0, 5);
-      if (!list.length) {
-        return '<p class="comment-empty">아직 댓글이 없어요. 첫 댓글을 남겨 보세요.</p>';
-      }
-      return list
-        .map(
-          (c) =>
-            '<article class="comment-item">' +
-            '<p class="who">' +
-            escapeHtml(c.author) +
-            '<span class="when">' +
-            formatCommentTime(c.createdAt) +
-            "</span></p>" +
-            '<p class="body">' +
-            escapeHtml(c.text) +
-            "</p></article>"
-        )
-        .join("");
-    }
-
     function renderFeed() {
       const list = sortedScenarios();
       if (!list.length) {
@@ -1503,12 +1446,9 @@
             : "";
           const commentsLen = getCommentsFor(s.id).length;
           return (
-            '<div class="feed-item" data-id="' +
-            escapeHtml(s.id) +
-            '">' +
             '<article class="card ' +
             cClass +
-            '" data-play="' +
+            '" data-id="' +
             escapeHtml(s.id) +
             '">' +
             '<div class="card-thumb">' +
@@ -1530,60 +1470,16 @@
             '<span class="badge">' +
             n +
             "강 토너먼트</span>" +
-            "</p></div></article>" +
-            '<div class="feed-comments">' +
-            '<p class="feed-comments-title">댓글 ' +
-            commentsLen +
-            "개</p>" +
-            '<div class="feed-comment-list">' +
-            renderFeedCommentsHtml(s.id) +
-            "</div>" +
-            '<form class="comment-form feed-comment-form">' +
-            '<textarea rows="2" maxlength="200" placeholder="이 만약에에 댓글 남기기" required></textarea>' +
-            '<p class="msg"></p>' +
-            '<button type="submit" class="primary">댓글 달기</button>' +
-            "</form>" +
-            "</div></div>"
+            "</p></div></article>"
           );
         })
         .join("");
 
-      grid.querySelectorAll(".card[data-play]").forEach((card) => {
+      grid.querySelectorAll(".card").forEach((card) => {
         card.addEventListener("click", () => {
-          const id = card.getAttribute("data-play");
+          const id = card.getAttribute("data-id");
           const scenario = loadScenarios().find((s) => s.id === id);
           if (scenario) openWatch(scenario);
-        });
-      });
-
-      grid.querySelectorAll(".feed-comment-form").forEach((form) => {
-        form.addEventListener("submit", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const item = form.closest(".feed-item");
-          const id = item && item.getAttribute("data-id");
-          const msgEl = form.querySelector(".msg");
-          const ta = form.querySelector("textarea");
-          msgEl.textContent = "";
-
-          const username = getSession();
-          if (!username || !getUser(username)) {
-            msgEl.textContent = "댓글도 로그인만 하면 돼요. 약 3초면 끝나요!";
-            authMsg.textContent = "댓글 쓰려면 로그인만 하면 돼요. 약 3초면 끝나요!";
-            openOverlay(authOverlay);
-            return;
-          }
-
-          const text = (ta.value || "").trim();
-          if (!text) {
-            msgEl.textContent = "내용을 적어 주세요.";
-            return;
-          }
-
-          addComment(id, username, text);
-          ta.value = "";
-          renderFeed();
-          if (currentWatch && currentWatch.id === id) renderComments(id);
         });
       });
     }
