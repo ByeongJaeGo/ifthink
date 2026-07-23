@@ -168,9 +168,106 @@
     }
 
     .main {
-      width: min(960px, 100%);
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .page-layout {
+      width: min(1180px, 100%);
       margin: 0 auto;
       padding: 1.5rem 1.25rem 3rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .side-rank {
+      position: sticky;
+      top: 4.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    .side-rank-board {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 0.85rem 0.9rem 0.95rem;
+    }
+
+    .side-rank-board h3 {
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 400;
+      margin-bottom: 0.65rem;
+    }
+
+    .side-rank-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin: 0;
+      padding: 0;
+    }
+
+    .side-rank-list li {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.86rem;
+      line-height: 1.3;
+      min-width: 0;
+    }
+
+    .side-rank-list .crown {
+      flex: 0 0 auto;
+      width: 1.05rem;
+      height: 1.05rem;
+      display: block;
+    }
+
+    .side-rank-list .nick {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--fg);
+    }
+
+    .side-rank-list .stat {
+      flex: 0 0 auto;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .side-rank-empty {
+      font-size: 0.8rem;
+      color: var(--muted);
+      padding: 0.25rem 0;
+    }
+
+    @media (max-width: 960px) {
+      .page-layout {
+        grid-template-columns: 1fr;
+      }
+      .side-rank {
+        position: static;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .side-rank {
+        grid-template-columns: 1fr;
+      }
     }
 
     .feed-title {
@@ -1114,15 +1211,32 @@
     </p>
   </section>
 
-  <main class="main">
-    <p class="feed-title">만약에 챌린지 목록</p>
-    <div class="sort-bar" role="tablist" aria-label="정렬">
-      <button type="button" class="active" data-sort="rank">랭킹순</button>
-      <button type="button" data-sort="latest">최신순</button>
-    </div>
-    <div class="grid" id="grid"></div>
-    <p class="empty hidden" id="empty">아직 공개된 만약에가 없습니다.</p>
-  </main>
+  <div class="page-layout">
+    <main class="main">
+      <p class="feed-title">만약에 챌린지 목록</p>
+      <div class="sort-bar" role="tablist" aria-label="정렬">
+        <button type="button" class="active" data-sort="rank">랭킹순</button>
+        <button type="button" data-sort="latest">최신순</button>
+      </div>
+      <div class="grid" id="grid"></div>
+      <p class="empty hidden" id="empty">아직 공개된 만약에가 없습니다.</p>
+    </main>
+
+    <aside class="side-rank" id="sideRank" aria-label="닉네임 랭킹">
+      <section class="side-rank-board">
+        <h3>최다 개시자</h3>
+        <ol class="side-rank-list" id="rankMostPosts"></ol>
+      </section>
+      <section class="side-rank-board">
+        <h3>최다 댓글자</h3>
+        <ol class="side-rank-list" id="rankMostComments"></ol>
+      </section>
+      <section class="side-rank-board">
+        <h3>고랭킹 개시자</h3>
+        <ol class="side-rank-list" id="rankTopAuthors"></ol>
+      </section>
+    </aside>
+  </div>
 
   <div class="overlay hidden" id="authOverlay">
     <div class="modal">
@@ -2142,6 +2256,9 @@
 
     const grid = document.getElementById("grid");
     const empty = document.getElementById("empty");
+    const rankMostPosts = document.getElementById("rankMostPosts");
+    const rankMostComments = document.getElementById("rankMostComments");
+    const rankTopAuthors = document.getElementById("rankTopAuthors");
     const authBtn = document.getElementById("authBtn");
     const createBtn = document.getElementById("createBtn");
     const myPostsBtn = document.getElementById("myPostsBtn");
@@ -2413,6 +2530,111 @@
       document.body.removeChild(ta);
     }
 
+    function crownSvg(tier) {
+      const colors = {
+        gold: "#d4af37",
+        silver: "#a8b0b8",
+        copper: "#b87333",
+        black: "#1a1a1a"
+      };
+      const fill = colors[tier] || colors.black;
+      return (
+        '<svg class="crown" viewBox="0 0 24 24" aria-hidden="true">' +
+        '<path fill="' +
+        fill +
+        '" d="M3 18h18v2.2H3V18zm1.2-2.4L5.5 8.2 9 12.1 12 5.5l3 6.6 3.5-3.9 1.3 7.4H4.2z"/>' +
+        "</svg>"
+      );
+    }
+
+    function crownTier(index) {
+      if (index === 0) return "gold";
+      if (index === 1) return "silver";
+      if (index === 2) return "copper";
+      return "black";
+    }
+
+    function renderRankList(el, rows, statLabel) {
+      if (!el) return;
+      if (!rows.length) {
+        el.innerHTML = '<li class="side-rank-empty">아직 없어요</li>';
+        return;
+      }
+      el.innerHTML = rows
+        .map((row, i) => {
+          return (
+            "<li>" +
+            crownSvg(crownTier(i)) +
+            '<span class="nick" title="' +
+            escapeHtml(row.nick) +
+            '">' +
+            escapeHtml(row.nick) +
+            '</span><span class="stat">' +
+            row.stat +
+            (statLabel || "") +
+            "</span></li>"
+          );
+        })
+        .join("");
+    }
+
+    function computeSideRankings() {
+      const scenarios = loadScenarios();
+      const commentsMap = loadComments();
+
+      const postCount = {};
+      scenarios.forEach((s) => {
+        const nick = String(s.author || "").trim();
+        if (!nick) return;
+        postCount[nick] = (postCount[nick] || 0) + 1;
+      });
+      const mostPosts = Object.keys(postCount)
+        .map((nick) => ({ nick, stat: postCount[nick] }))
+        .sort((a, b) => b.stat - a.stat || a.nick.localeCompare(b.nick, "ko"))
+        .slice(0, 5);
+
+      const commentCount = {};
+      Object.keys(commentsMap || {}).forEach((sid) => {
+        (commentsMap[sid] || []).forEach((c) => {
+          const nick = String(c.author || "").trim();
+          if (!nick) return;
+          commentCount[nick] = (commentCount[nick] || 0) + 1;
+        });
+      });
+      const mostComments = Object.keys(commentCount)
+        .map((nick) => ({ nick, stat: commentCount[nick] }))
+        .sort((a, b) => b.stat - a.stat || a.nick.localeCompare(b.nick, "ko"))
+        .slice(0, 5);
+
+      const byPlays = scenarios
+        .slice()
+        .sort((a, b) => {
+          const playDiff = (b.plays || 0) - (a.plays || 0);
+          if (playDiff !== 0) return playDiff;
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+      const seen = {};
+      const topAuthors = [];
+      byPlays.forEach((s) => {
+        const nick = String(s.author || "").trim();
+        if (!nick || seen[nick]) return;
+        seen[nick] = true;
+        topAuthors.push({ nick, stat: s.plays || 0 });
+      });
+      return {
+        mostPosts,
+        mostComments,
+        topAuthors: topAuthors.slice(0, 5)
+      };
+    }
+
+    function renderSideRankings() {
+      const data = computeSideRankings();
+      renderRankList(rankMostPosts, data.mostPosts, "개");
+      renderRankList(rankMostComments, data.mostComments, "개");
+      renderRankList(rankTopAuthors, data.topAuthors, "참여");
+    }
+
     function renderFeed() {
       const list = sortedScenarios();
       if (!list.length) {
@@ -2512,9 +2734,8 @@
         });
       });
       bindCommentLikeButtons(grid);
+      renderSideRankings();
     }
-
-    document.querySelectorAll(".sort-bar button").forEach((btn) => {
       btn.addEventListener("click", () => {
         sortMode = btn.getAttribute("data-sort");
         document.querySelectorAll(".sort-bar button").forEach((b) => {
