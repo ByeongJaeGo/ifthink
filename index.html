@@ -1589,15 +1589,112 @@
       });
       return out;
     }
+    const OTANI_SEED_COMMENTS = [
+      {
+        id: "otani-c-1",
+        author: "불펜대기",
+        text: "김도영이라도 돼보고 싶다",
+        likes: 97,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 18
+      },
+      {
+        id: "otani-c-2",
+        author: "홈런볼도둑",
+        text: "걍 나는 내 살이 좋음 ㅇㅇ 돈 많이 번다는 이유로 야구선수 되고싶지 않음.",
+        likes: 91,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 41
+      },
+      {
+        id: "otani-c-3",
+        author: "잠실야경",
+        text: "하루만이라도 투타 겸업 체력 느껴보고 싶음… 일반인은 상상 불가",
+        likes: 63,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 60 * 2
+      },
+      {
+        id: "otani-c-4",
+        author: "삼진아웃각",
+        text: "오타니 되면 월드시리즈부터 찍고 원래 몸으로 돌아오고 싶다ㅋㅋ",
+        likes: 58,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 60 * 5
+      },
+      {
+        id: "otani-c-5",
+        author: "덕아웃간식",
+        text: "김도영 스윙이라도 하루 체험권 있으면 사람 줄 서서 사겠다",
+        likes: 72,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 60 * 8
+      },
+      {
+        id: "otani-c-6",
+        author: "연장전커피",
+        text: "솔직히 연봉보다 그 압박감이 더 무서울 듯… 나는 조용한 월급이 맞음",
+        likes: 54,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 60 * 11
+      },
+      {
+        id: "otani-c-7",
+        author: "글러브냄새",
+        text: "하루 오타니 = 하루 동안 세계가 나한테 반응하는 거임. 그거 중독될 듯",
+        likes: 67,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 60 * 15
+      },
+      {
+        id: "otani-c-8",
+        author: "대타대기중",
+        text: "야구선수 말고 그냥 오타니 자산만 하루 쓰고 싶다 그게 치트키",
+        likes: 49,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 60 * 22
+      }
+    ];
+
+    function ensureOtaniComments(map) {
+      const otaniScenarioIds = loadScenarios()
+        .filter((s) => String(s.text || "").includes("오타니"))
+        .map((s) => s.id);
+      if (!otaniScenarioIds.length) return { map, changed: false };
+
+      let changed = false;
+      const next = { ...map };
+      otaniScenarioIds.forEach((sid) => {
+        const existing = Array.isArray(next[sid]) ? next[sid].slice() : [];
+        const withoutSeed = existing.filter((c) => !String(c.id || "").startsWith("otani-c-"));
+        const merged = withoutSeed.concat(
+          OTANI_SEED_COMMENTS.map((c) => ({ ...c }))
+        );
+        const before = JSON.stringify(existing.map((c) => [c.id, c.likes, c.text]));
+        const after = JSON.stringify(merged.map((c) => [c.id, c.likes, c.text]));
+        if (before !== after) {
+          next[sid] = merged;
+          changed = true;
+        }
+      });
+      return { map: next, changed };
+    }
+
     function loadComments() {
       try {
         const raw = localStorage.getItem(STORAGE_COMMENTS);
+        let map;
         if (!raw) {
-          const seeded = normalizeCommentsMap(SEED_COMMENTS);
-          localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(seeded));
-          return seeded;
+          map = normalizeCommentsMap(SEED_COMMENTS);
+        } else {
+          map = normalizeCommentsMap(JSON.parse(raw));
         }
-        return normalizeCommentsMap(JSON.parse(raw));
+        const ensured = ensureOtaniComments(map);
+        map = normalizeCommentsMap(ensured.map);
+        if (!raw || ensured.changed) {
+          localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(map));
+        }
+        return map;
       } catch {
         return normalizeCommentsMap(SEED_COMMENTS);
       }
