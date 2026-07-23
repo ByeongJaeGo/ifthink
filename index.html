@@ -2222,8 +2222,10 @@
 
     copyShareBtn.addEventListener("click", async () => {
       try {
-        await copyText(shareText.textContent || "");
-        shareCopied.textContent = "문장이 복사됐어요. 단톡에 붙여넣기 하세요!";
+        const body = shareText.textContent || "";
+        const link = shareLinkInput.value || "";
+        await copyText(link ? body + "\n" + link : body);
+        shareCopied.textContent = "문장+링크가 복사됐어요. 단톡에 붙여넣기 하세요!";
       } catch (err) {
         shareCopied.textContent = "복사에 실패했어요. 위 문장을 길게 눌러 복사해 주세요.";
       }
@@ -2231,12 +2233,19 @@
 
     copyLinkBtn.addEventListener("click", async () => {
       try {
+        shareLinkInput.focus();
+        shareLinkInput.select();
         await copyText(shareLinkInput.value || "");
         shareCopied.textContent = "공유 링크가 복사됐어요!";
       } catch (err) {
-        shareCopied.textContent = "링크 복사에 실패했어요. 주소창 링크를 직접 복사해 주세요.";
+        shareCopied.textContent = "링크 복사에 실패했어요. 박스 안 링크를 길게 눌러 복사해 주세요.";
       }
     });
+
+    if (shareLinkInput) {
+      shareLinkInput.addEventListener("focus", () => shareLinkInput.select());
+      shareLinkInput.addEventListener("click", () => shareLinkInput.select());
+    }
 
     choiceA.addEventListener("click", () => pickWinner("A"));
     choiceB.addEventListener("click", () => pickWinner("B"));
