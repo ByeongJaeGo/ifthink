@@ -565,6 +565,81 @@
       z-index: 1;
     }
 
+    .thumb-timer {
+      position: absolute;
+      top: 0.55rem;
+      right: 0.55rem;
+      z-index: 1;
+      font-size: 0.72rem;
+      letter-spacing: 0.02em;
+      padding: 0.2rem 0.45rem;
+      border: 1px solid #1a1a1a;
+      background: #1a1a1a;
+      color: #f0d78c;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .thumb-timer.expired {
+      background: transparent;
+      color: var(--muted);
+      border-color: var(--line);
+      border-style: dashed;
+    }
+
+    .card.timed-card {
+      border-color: #1a1a1a;
+    }
+
+    .card.timed-expired {
+      opacity: 0.62;
+      cursor: not-allowed;
+    }
+
+    .card.timed-expired:hover {
+      transform: none;
+      border-color: var(--line);
+    }
+
+    .timed-check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.55rem;
+      margin: 0.85rem 0 1rem;
+      padding: 0.75rem 0.85rem;
+      border: 1px dashed var(--line);
+      background: #fff;
+    }
+
+    .timed-check-row input {
+      margin-top: 0.2rem;
+      width: auto;
+      accent-color: var(--fg);
+    }
+
+    .timed-check-row label {
+      margin: 0;
+      font-size: 0.88rem;
+      line-height: 1.4;
+      color: var(--fg);
+      cursor: pointer;
+    }
+
+    .timed-check-row .sub {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .streak-chip {
+      font-size: 0.78rem;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 0.2rem 0.5rem;
+      white-space: nowrap;
+    }
+
     .nick-row {
       display: flex;
       gap: 0.5rem;
@@ -1012,6 +1087,7 @@
     <a href="/" class="logo" id="logoLink">ifthink</a>
     <div class="header-actions">
       <span class="user-chip hidden" id="userChip"></span>
+      <span class="streak-chip hidden" id="streakChip"></span>
       <button type="button" id="myPostsBtn">내 작성글</button>
       <button type="button" id="createBtn">만약에 상황 생성하기</button>
       <button type="button" class="primary" id="authBtn">로그인</button>
@@ -1115,6 +1191,13 @@
         </p>
         <div class="option-list" id="optionInputs"></div>
         <button type="button" class="add-option-btn" id="addOptionBtn">+상황 추가하기</button>
+        <div class="timed-check-row">
+          <input type="checkbox" id="timedChallengeCheck" />
+          <label for="timedChallengeCheck">
+            24시간 타임어택으로 올리기
+            <span class="sub">개시 후 24시간만 참여 가능 · 계정당 하루 1개</span>
+          </label>
+        </div>
         <p class="msg" id="createMsg"></p>
         <button type="submit" class="primary" id="createSubmit">개시하기</button>
       </form>
@@ -1536,6 +1619,156 @@
       }
     ];
 
+    function kstDayKey(ts) {
+      const d = new Date(ts || Date.now());
+      const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+      return kst.toISOString().slice(0, 10);
+    }
+    function isTimedScenario(s) {
+      return !!(s && (s.timed || s.expiresAt));
+    }
+    function getExpiresAt(s) {
+      if (!s) return 0;
+      if (s.expiresAt) return s.expiresAt;
+      if (s.timed && s.createdAt) return s.createdAt + 24 * 60 * 60 * 1000;
+      return 0;
+    }
+    function isTimedExpired(s) {
+      if (!isTimedScenario(s)) return false;
+      return Date.now() >= getExpiresAt(s);
+    }
+    function formatRemain(ms) {
+      if (ms <= 0) return "종료";
+      const totalMin = Math.floor(ms / 60000);
+      const h = Math.floor(totalMin / 60);
+      const m = totalMin % 60;
+      if (h > 0) return "⏱ " + h + "시간 " + m + "분";
+      if (m > 0) return "⏱ " + m + "분";
+      return "⏱ 곧 종료";
+    }
+    function hasPostedTimedToday(authorKey) {
+      if (!authorKey) return false;
+      const today = kstDayKey(Date.now());
+      return loadScenarios().some((s) => {
+        if (!isTimedScenario(s)) return false;
+        const mine =
+          (s.authorUid && s.authorUid === authorKey) || s.author === authorKey;
+        if (!mine) return false;
+        return kstDayKey(s.createdAt || 0) === today;
+      });
+    }
+
+    const TIMED_FAMILY_SEED = {
+      id: "seed-timed-family",
+      text: "ㄸ치다가 가족한테 들킨면... ㅅㅂ..",
+      options: [
+        "걍 자살한다.",
+        "황급히 수습한다.",
+        "긁는척 뒤늦게 한다.",
+        "아픈척 한다 ㅋㅋㅋ"
+      ],
+      wins: {
+        "걍 자살한다.": 9,
+        "황급히 수습한다.": 14,
+        "긁는척 뒤늦게 한다.": 11,
+        "아픈척 한다 ㅋㅋㅋ": 18
+      },
+      author: "야간순찰",
+      plays: 52,
+      timed: true,
+      createdAt: 0,
+      expiresAt: 0
+    };
+
+    const TIMED_FAMILY_COMMENTS = [
+      {
+        id: "timed-fam-c1",
+        author: "현관센서",
+        text: "아픈척이 국룰인데 엄마는 다 알아챔…",
+        likes: 44,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 25
+      },
+      {
+        id: "timed-fam-c2",
+        author: "문틈바람",
+        text: "황급히 수습하다 더 들키는 타입 손!",
+        likes: 38,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 55
+      },
+      {
+        id: "timed-fam-c3",
+        author: "세탁건조기",
+        text: "긁는척은 연기가 생명임 ㅋㅋㅋ",
+        likes: 31,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 90
+      },
+      {
+        id: "timed-fam-c4",
+        author: "베개속주머니",
+        text: "자살한다 고른 사람… 감정은 이해함 방법은 비추",
+        likes: 27,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 140
+      },
+      {
+        id: "timed-fam-c5",
+        author: "복도슬리퍼",
+        text: "그냥 눈 마주치고 ‘뭐’ 하는 게 제일 강력함",
+        likes: 35,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 200
+      }
+    ];
+
+    function ensureTimedFamilySeed(list) {
+      const idx = list.findIndex((s) => s.id === TIMED_FAMILY_SEED.id);
+      const now = Date.now();
+      if (idx < 0) {
+        list.unshift({
+          ...TIMED_FAMILY_SEED,
+          createdAt: now,
+          expiresAt: now + 24 * 60 * 60 * 1000
+        });
+        return { list, changed: true };
+      }
+      const cur = list[idx];
+      if (!cur.expiresAt || now >= cur.expiresAt) {
+        list[idx] = {
+          ...cur,
+          text: TIMED_FAMILY_SEED.text,
+          options: TIMED_FAMILY_SEED.options.slice(),
+          wins: { ...TIMED_FAMILY_SEED.wins },
+          author: TIMED_FAMILY_SEED.author,
+          timed: true,
+          createdAt: now,
+          expiresAt: now + 24 * 60 * 60 * 1000,
+          plays: Math.max(cur.plays || 0, TIMED_FAMILY_SEED.plays)
+        };
+        return { list, changed: true };
+      }
+      return { list, changed: false };
+    }
+
+    function ensureTimedFamilyComments(map) {
+      const existing = Array.isArray(map[TIMED_FAMILY_SEED.id])
+        ? map[TIMED_FAMILY_SEED.id].slice()
+        : [];
+      const without = existing.filter(
+        (c) => !String(c.id || "").startsWith("timed-fam-c")
+      );
+      const merged = without.concat(TIMED_FAMILY_COMMENTS.map((c) => ({ ...c })));
+      const before = JSON.stringify(existing.map((c) => [c.id, c.text, c.likes]));
+      const after = JSON.stringify(merged.map((c) => [c.id, c.text, c.likes]));
+      if (before === after) return { map, changed: false };
+      return {
+        map: { ...map, [TIMED_FAMILY_SEED.id]: merged },
+        changed: true
+      };
+    }
+
     function loadScenarios() {
       try {
         let list;
@@ -1554,6 +1787,9 @@
           }
           return s;
         });
+        const timedEnsured = ensureTimedFamilySeed(list);
+        list = timedEnsured.list;
+        if (timedEnsured.changed) changed = true;
         if (changed || !raw) {
           localStorage.setItem(STORAGE_SCENARIOS, JSON.stringify(list));
         }
@@ -1691,7 +1927,9 @@
         }
         const ensured = ensureOtaniComments(map);
         map = normalizeCommentsMap(ensured.map);
-        if (!raw || ensured.changed) {
+        const timedComments = ensureTimedFamilyComments(map);
+        map = normalizeCommentsMap(timedComments.map);
+        if (!raw || ensured.changed || timedComments.changed) {
           localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(map));
         }
         return map;
@@ -1930,6 +2168,8 @@
     const createMsg = document.getElementById("createMsg");
     const createHint = document.getElementById("createHint");
     const createSubmit = document.getElementById("createSubmit");
+    const timedChallengeCheck = document.getElementById("timedChallengeCheck");
+    const streakChip = document.getElementById("streakChip");
     const optionInputs = document.getElementById("optionInputs");
     const addOptionBtn = document.getElementById("addOptionBtn");
     const MIN_OPTIONS = 2;
@@ -2104,9 +2344,19 @@
         userChip.textContent = profile.nickname + " · 참여 " + Math.min(profile.participations || 0, 1) + "/1";
         userChip.classList.remove("hidden");
         authBtn.textContent = "로그아웃";
+        const streak = profile.timedStreak || 0;
+        if (streakChip) {
+          if (streak > 0) {
+            streakChip.textContent = "연속 " + streak + "일";
+            streakChip.classList.remove("hidden");
+          } else {
+            streakChip.classList.add("hidden");
+          }
+        }
       } else {
         userChip.classList.add("hidden");
         authBtn.textContent = "로그인";
+        if (streakChip) streakChip.classList.add("hidden");
       }
     }
 
@@ -2196,14 +2446,30 @@
               renderLikeButton(s.id, topComment, username) +
               "</div>"
             : '<div class="card-comment-preview"><p class="preview-empty">아직 댓글이 없어요</p></div>';
+          const timed = isTimedScenario(s);
+          const expired = isTimedExpired(s);
+          const remainMs = getExpiresAt(s) - Date.now();
+          const timerHtml = timed
+            ? '<span class="thumb-timer' +
+              (expired ? " expired" : "") +
+              '">' +
+              (expired ? "종료" : formatRemain(remainMs)) +
+              "</span>"
+            : "";
+          const timedClass =
+            (timed ? " timed-card" : "") + (expired ? " timed-expired" : "");
           return (
             '<article class="card ' +
             cClass +
+            timedClass +
             '" data-id="' +
             escapeHtml(s.id) +
-            '">' +
+            '"' +
+            (expired ? ' aria-disabled="true"' : "") +
+            ">" +
             '<div class="card-thumb">' +
             thumbRank +
+            timerHtml +
             "<span>" +
             escapeHtml(s.text) +
             "</span></div>" +
@@ -2219,8 +2485,9 @@
             commentsLen +
             "</span>" +
             '<span class="badge">' +
+            (timed ? "타임어택 · " : "") +
             n +
-            "개 토너먼트</span>" +
+            "개</span>" +
             "</p>" +
             previewHtml +
             "</div></article>"
@@ -2232,7 +2499,12 @@
         card.addEventListener("click", () => {
           const id = card.getAttribute("data-id");
           const scenario = loadScenarios().find((s) => s.id === id);
-          if (scenario) openWatch(scenario);
+          if (!scenario) return;
+          if (isTimedExpired(scenario)) {
+            showToast("이 타임어택은 24시간이 지나 종료됐어요.");
+            return;
+          }
+          openWatch(scenario);
         });
       });
       bindCommentLikeButtons(grid);
@@ -2323,6 +2595,10 @@
     function openWatch(scenario) {
       const opts = normalizeOptions(scenario);
       if (opts.length < 2) return;
+      if (isTimedExpired(scenario)) {
+        showToast("이 타임어택은 24시간이 지나 종료됐어요.");
+        return;
+      }
 
       currentWatch = scenario;
       tournamentDone = false;
@@ -2334,7 +2610,10 @@
       }
 
       watchText.textContent = scenario.text;
-      watchAuthor.textContent = scenario.author + " · 토너먼트";
+      const remainLabel = isTimedScenario(scenario)
+        ? " · 타임어택 " + formatRemain(getExpiresAt(scenario) - Date.now())
+        : " · 토너먼트";
+      watchAuthor.textContent = scenario.author + remainLabel;
       commentMsg.textContent = "";
       commentInput.value = "";
       renderComments(scenario.id);
@@ -2392,10 +2671,28 @@
           list[idx] = item;
           saveScenarios(list);
 
+          const streakPatch = {};
+          if (isTimedScenario(currentWatch)) {
+            const today = kstDayKey(Date.now());
+            const last = user.lastTimedPlayDay || "";
+            let streak = user.timedStreak || 0;
+            if (last === today) {
+              // already counted streak today
+            } else {
+              const y = new Date(Date.now() + 9 * 60 * 60 * 1000);
+              y.setUTCDate(y.getUTCDate() - 1);
+              const yesterday = y.toISOString().slice(0, 10);
+              streak = last === yesterday ? streak + 1 : 1;
+              streakPatch.timedStreak = streak;
+              streakPatch.lastTimedPlayDay = today;
+            }
+          }
           updateUser(username, {
             doneIds: [...doneIds, currentWatch.id],
-            participations: (user.participations || 0) + 1
+            participations: (user.participations || 0) + 1,
+            ...streakPatch
           });
+          refreshHeader();
         } else {
           // already counted before; read current tallies
           item.wins = wins;
@@ -2718,6 +3015,7 @@
       createSubmit.textContent = "개시하기";
       createMsg.textContent = "";
       document.getElementById("newScenario").value = "";
+      if (timedChallengeCheck) timedChallengeCheck.checked = false;
       resetOptionInputs();
       const username = getSession();
       const user = username ? getUser(username) : null;
@@ -2729,7 +3027,8 @@
           "/1)";
         createSubmit.disabled = true;
       } else {
-        createHint.textContent = "질문 1개 + 상황 2개 이상이면 개시할 수 있어요. +상황 추가하기로 늘리세요.";
+        createHint.textContent =
+          "질문 1개 + 상황 2개 이상이면 개시할 수 있어요. 타임어택은 하루 1개입니다.";
         createSubmit.disabled = false;
       }
       openOverlay(createOverlay);
@@ -2917,20 +3216,35 @@
 
       const wins = {};
       options.forEach((o) => { wins[o] = 0; });
+      const wantTimed = !!(timedChallengeCheck && timedChallengeCheck.checked);
+      if (wantTimed) {
+        const authorKey = (currentAuthUser && currentAuthUser.uid) || username;
+        if (hasPostedTimedToday(authorKey) || hasPostedTimedToday(username)) {
+          createMsg.textContent = "타임어택 개시물은 하루 1개만 올릴 수 있어요. 내일 다시 시도해 주세요.";
+          return;
+        }
+      }
+      const createdAt = Date.now();
       list.push({
-        id: "user-" + Date.now(),
+        id: "user-" + createdAt,
         text,
         options,
         wins,
         author: username,
         authorUid: currentAuthUser ? currentAuthUser.uid : null,
         plays: 0,
-        createdAt: Date.now()
+        createdAt,
+        timed: wantTimed,
+        expiresAt: wantTimed ? createdAt + 24 * 60 * 60 * 1000 : null
       });
       saveScenarios(list);
       closeOverlay(createOverlay);
       renderFeed();
-      showToast("만약에 개시물을 올렸어요!");
+      showToast(
+        wantTimed
+          ? "24시간 타임어택 개시물을 올렸어요!"
+          : "만약에 개시물을 올렸어요!"
+      );
     });
 
     document.getElementById("logoLink").addEventListener("click", (e) => {
@@ -2977,6 +3291,11 @@
     refreshHeader();
     renderFeed();
     handleIncomingShare();
+    setInterval(() => {
+      if (document.hidden) return;
+      const hasTimed = loadScenarios().some(isTimedScenario);
+      if (hasTimed) renderFeed();
+    }, 30000);
   </script>
 </body>
 </html>
