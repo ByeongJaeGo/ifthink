@@ -890,29 +890,49 @@
 
     .thumb-timer-wrap {
       position: absolute;
-      top: 0.55rem;
-      right: 0.55rem;
-      z-index: 1;
-      max-width: 46%;
-      text-align: right;
+      top: 0.45rem;
+      left: 0.45rem;
+      right: 0.45rem;
+      z-index: 2;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.45rem;
+      pointer-events: none;
+    }
+
+    .thumb-timer-wrap.with-rank {
+      left: 3.1rem;
     }
 
     .thumb-timer-wrap .thumb-timer {
       position: static;
       display: inline-block;
-    }
-
-    .thumb-timer-wrap hr {
-      border: none;
-      border-top: 1px solid rgba(26, 26, 26, 0.2);
-      margin: 0.35rem 0 0.3rem;
+      flex: 0 0 auto;
+      pointer-events: auto;
     }
 
     .thumb-timer-note {
-      font-size: 0.68rem;
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      padding: 0.28rem 0.45rem;
+      font-size: 0.72rem;
+      font-weight: 600;
       line-height: 1.35;
-      color: var(--muted);
-      text-align: right;
+      text-align: left;
+      color: #1a1a1a;
+      background: rgba(255, 248, 220, 0.95);
+      border: 1px solid rgba(26, 26, 26, 0.55);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+    }
+
+    .thumb-timer-note.expired {
+      color: #5a5a5a;
+      background: rgba(245, 245, 245, 0.95);
+      border-style: dashed;
+      border-color: var(--line);
+      font-weight: 500;
     }
 
     .card.timed-card {
@@ -3348,18 +3368,21 @@
           const expired = isTimedExpired(s);
           const remainMs = getExpiresAt(s) - Date.now();
           const timerHtml = timed
-            ? '<div class="thumb-timer-wrap">' +
+            ? '<div class="thumb-timer-wrap' +
+              (showRank ? " with-rank" : "") +
+              '">' +
+              '<p class="thumb-timer-note' +
+              (expired ? " expired" : "") +
+              '">' +
+              (expired
+                ? "시간이 지나 참여할 수 없는 개시물입니다."
+                : "일정 시간이 지나면 참여할 수 없는 개시물입니다.") +
+              "</p>" +
               '<span class="thumb-timer' +
               (expired ? " expired" : "") +
               '">' +
               (expired ? "종료" : formatRemain(remainMs)) +
-              "</span>" +
-              "<hr />" +
-              '<p class="thumb-timer-note">' +
-              (expired
-                ? "시간이 지나 참여할 수 없는 개시물입니다."
-                : "일정 시간이 지나면 참여할 수 없는 개시물입니다.") +
-              "</p></div>"
+              "</span></div>"
             : "";
           const timedClass =
             (timed ? " timed-card" : "") + (expired ? " timed-expired" : "");
