@@ -790,6 +790,32 @@
       white-space: nowrap;
     }
 
+    .title-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      letter-spacing: 0.02em;
+      padding: 0.15rem 0.45rem;
+      border: 1px solid var(--line);
+      white-space: nowrap;
+      line-height: 1.2;
+      vertical-align: middle;
+    }
+
+    .title-badge.bronze { color: #8b5a2b; border-color: #b87333; background: #f7efe6; }
+    .title-badge.silver { color: #4a5560; border-color: #a8b0b8; background: #f1f3f5; }
+    .title-badge.gold { color: #8a6a00; border-color: #d4af37; background: #fff8e1; }
+    .title-badge.platinum { color: #3d5a73; border-color: #7f9db5; background: #eef5fa; }
+    .title-badge.diamond { color: #2a6f8f; border-color: #5ec8e6; background: #e8f8fd; }
+    .title-badge.legend { color: #6b2d8b; border-color: #a855f7; background: #f6edff; }
+    .title-badge.ideabanker { color: #7a1f1f; border-color: #c45c5c; background: #fff0f0; }
+
+    .side-rank-list .title-badge {
+      flex: 0 0 auto;
+      max-width: 5.5rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .nick-row {
       display: flex;
       gap: 0.5rem;
@@ -1237,6 +1263,7 @@
     <a href="/" class="logo" id="logoLink">ifthink</a>
     <div class="header-actions">
       <span class="user-chip hidden" id="userChip"></span>
+      <span class="title-badge hidden" id="titleBadge"></span>
       <span class="streak-chip hidden" id="streakChip"></span>
       <button type="button" id="myPostsBtn">내 작성글</button>
       <button type="button" id="createBtn">만약에 상황 생성하기</button>
@@ -1248,6 +1275,8 @@
   <p class="notice promo">
     7월 한 달 동안 <strong>만약에 개시물</strong>을 올린 참여자 중 5분 추첨으로
     <strong>스타벅스 아메리카노 Tall 1잔</strong>을 드립니다.
+    오늘 챌린지에 참여하면 <strong>응모권 +1</strong>.
+    매일 개시하면 꾸준한 개시자 칭호가 쌓입니다.
     <button type="button" class="promo-event-btn" id="eventApplyBtn">이벤트 응모하기</button>
   </p>
 
@@ -1790,6 +1819,95 @@
       const d = new Date(ts || Date.now());
       const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
       return kst.toISOString().slice(0, 10);
+    }
+    function shiftKstDay(dayKey, delta) {
+      const parts = String(dayKey || "").split("-").map(Number);
+      if (parts.length < 3 || parts.some((n) => !n && n !== 0)) return "";
+      const dt = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+      dt.setUTCDate(dt.getUTCDate() + delta);
+      return dt.toISOString().slice(0, 10);
+    }
+
+    /** 꾸준한 개시자 칭호 — 하루 1개 이상 개시 연속일 기준 */
+    const CREATE_TITLES = [
+      { min: 100, id: "ideabanker", label: "아이디어뱅커" },
+      { min: 60, id: "legend", label: "레전드" },
+      { min: 30, id: "diamond", label: "다이아몬드" },
+      { min: 14, id: "platinum", label: "플레티넘" },
+      { min: 7, id: "gold", label: "골드" },
+      { min: 3, id: "silver", label: "실버" },
+      { min: 1, id: "bronze", label: "브론즈" }
+    ];
+    function titleFromCreateStreak(streak) {
+      const n = Number(streak) || 0;
+      if (n < 1) return null;
+      for (let i = 0; i < CREATE_TITLES.length; i++) {
+        if (n >= CREATE_TITLES[i].min) return CREATE_TITLES[i];
+      }
+      return null;
+    }
+    function titleBadgeHtml(title) {
+      if (!title) return "";
+      return (
+        '<span class="title-badge ' +
+        title.id +
+        '" title="꾸준한 개시자 · 연속 ' +
+        (title.min || "") +
+        '일+">' +
+        escapeHtml(title.label) +
+        "</span>"
+      );
+    }
+    /** 개시일 기준으로 연속 개시 일수 계산 (끊기면 0부터) */
+    function getCreateStreakForAuthor(nick) {
+      const name = String(nick || "").trim();
+      if (!name) return 0;
+      const daySet = new Set();
+      loadScenarios().forEach((s) => {
+        if (String(s.author || "").trim() !== name) return;
+        if (!s.createdAt) return;
+        daySet.add(kstDayKey(s.createdAt));
+      });
+      if (!daySet.size) return 0;
+      const today = kstDayKey(Date.now());
+      let cursor = today;
+      if (!daySet.has(today)) {
+        const yesterday = shiftKstDay(today, -1);
+        if (!daySet.has(yesterday)) return 0;
+        cursor = yesterday;
+      }
+      let streak = 0;
+      while (daySet.has(cursor)) {
+        streak += 1;
+        cursor = shiftKstDay(cursor, -1);
+      }
+      return streak;
+    }
+    function bumpCreateStreakOnPost(user) {
+      const today = kstDayKey(Date.now());
+      const last = (user && user.lastCreateDay) || "";
+      let streak = (user && user.createStreak) || 0;
+      if (last === today) {
+        return { createStreak: streak || 1, lastCreateDay: today, upgraded: false };
+      }
+      const yesterday = shiftKstDay(today, -1);
+      streak = last === yesterday ? streak + 1 : 1;
+      const prevTitle = titleFromCreateStreak(last === yesterday ? streak - 1 : 0);
+      const nextTitle = titleFromCreateStreak(streak);
+      const upgraded =
+        !!(nextTitle && (!prevTitle || prevTitle.id !== nextTitle.id));
+      return { createStreak: streak, lastCreateDay: today, upgraded, title: nextTitle };
+    }
+    function resolveCreateStreak(nick, profile) {
+      const fromPosts = getCreateStreakForAuthor(nick);
+      const fromProfile = (profile && profile.createStreak) || 0;
+      const today = kstDayKey(Date.now());
+      const last = (profile && profile.lastCreateDay) || "";
+      let profileLive = fromProfile;
+      if (fromProfile > 0 && last && last !== today && last !== shiftKstDay(today, -1)) {
+        profileLive = 0;
+      }
+      return Math.max(fromPosts, profileLive);
     }
     function isTimedScenario(s) {
       return !!(s && (s.timed || s.expiresAt));
@@ -2344,6 +2462,7 @@
     const createSubmit = document.getElementById("createSubmit");
     const timedChallengeCheck = document.getElementById("timedChallengeCheck");
     const streakChip = document.getElementById("streakChip");
+    const titleBadge = document.getElementById("titleBadge");
     const optionInputs = document.getElementById("optionInputs");
     const addOptionBtn = document.getElementById("addOptionBtn");
     const MIN_OPTIONS = 2;
@@ -2515,13 +2634,32 @@
     function refreshHeader() {
       const profile = getCurrentProfile();
       if (profile && currentAuthUser) {
-        userChip.textContent = profile.nickname + " · 참여 " + Math.min(profile.participations || 0, 1) + "/1";
+        const tickets = profile.eventTickets || 0;
+        userChip.textContent =
+          profile.nickname +
+          " · 참여 " +
+          Math.min(profile.participations || 0, 1) +
+          "/1" +
+          (tickets > 0 ? " · 응모권 " + tickets : "");
         userChip.classList.remove("hidden");
         authBtn.textContent = "로그아웃";
+        const createStreak = resolveCreateStreak(profile.nickname, profile);
+        const title = titleFromCreateStreak(createStreak);
+        if (titleBadge) {
+          if (title) {
+            titleBadge.textContent = title.label;
+            titleBadge.className = "title-badge " + title.id;
+            titleBadge.title = "꾸준한 개시자 · 연속 " + createStreak + "일";
+            titleBadge.classList.remove("hidden");
+          } else {
+            titleBadge.classList.add("hidden");
+            titleBadge.className = "title-badge hidden";
+          }
+        }
         const streak = profile.timedStreak || 0;
         if (streakChip) {
           if (streak > 0) {
-            streakChip.textContent = "연속 " + streak + "일";
+            streakChip.textContent = "타임 " + streak + "일";
             streakChip.classList.remove("hidden");
           } else {
             streakChip.classList.add("hidden");
@@ -2530,6 +2668,10 @@
       } else {
         userChip.classList.add("hidden");
         authBtn.textContent = "로그인";
+        if (titleBadge) {
+          titleBadge.classList.add("hidden");
+          titleBadge.className = "title-badge hidden";
+        }
         if (streakChip) streakChip.classList.add("hidden");
       }
     }
@@ -2615,6 +2757,8 @@
       }
       el.innerHTML = rows
         .map((row, i) => {
+          const streak = resolveCreateStreak(row.nick, null);
+          const title = titleFromCreateStreak(streak);
           return (
             "<li>" +
             crownSvg(crownTier(i)) +
@@ -2622,7 +2766,9 @@
             escapeHtml(row.nick) +
             '">' +
             escapeHtml(row.nick) +
-            '</span><span class="stat">' +
+            "</span>" +
+            titleBadgeHtml(title) +
+            '<span class="stat">' +
             row.stat +
             (statLabel || "") +
             "</span></li>"
@@ -2966,13 +3112,17 @@
             if (last === today) {
               // already counted streak today
             } else {
-              const y = new Date(Date.now() + 9 * 60 * 60 * 1000);
-              y.setUTCDate(y.getUTCDate() - 1);
-              const yesterday = y.toISOString().slice(0, 10);
+              const yesterday = shiftKstDay(today, -1);
               streak = last === yesterday ? streak + 1 : 1;
               streakPatch.timedStreak = streak;
               streakPatch.lastTimedPlayDay = today;
             }
+          }
+          // 오늘 첫 참여 → 응모권 +1 (가변·손실회피 루프)
+          const playDay = kstDayKey(Date.now());
+          if (user.lastTicketDay !== playDay) {
+            streakPatch.eventTickets = (user.eventTickets || 0) + 1;
+            streakPatch.lastTicketDay = playDay;
           }
           updateUser(username, {
             doneIds: [...doneIds, currentWatch.id],
@@ -3195,7 +3345,11 @@
         return;
       }
       const profile = getCurrentProfile();
-      eventMsg.textContent = "";
+      const tickets = (profile && profile.eventTickets) || 0;
+      eventMsg.textContent =
+        tickets > 0
+          ? "보유 응모권 " + tickets + "장 · 오늘 참여하면 +1"
+          : "오늘 챌린지에 참여하면 응모권 +1";
       eventMsg.classList.remove("ok");
       eventNickname.value = profile.nickname || "";
       eventEmail.value = profile.email || currentAuthUser.email || "";
@@ -3242,6 +3396,7 @@
           email,
           source: "starbucks_week",
           scenarioId: null,
+          eventTickets: (getCurrentProfile() && getCurrentProfile().eventTickets) || 0,
           updatedAt: now
         };
         if (existing.exists) {
@@ -3525,13 +3680,30 @@
         expiresAt: wantTimed ? createdAt + 24 * 60 * 60 * 1000 : null
       });
       saveScenarios(list);
+      const streakInfo = bumpCreateStreakOnPost(user);
+      updateUser(username, {
+        createStreak: streakInfo.createStreak,
+        lastCreateDay: streakInfo.lastCreateDay
+      });
       closeOverlay(createOverlay);
       renderFeed();
-      showToast(
-        wantTimed
-          ? "24시간 타임어택 개시물을 올렸어요!"
-          : "만약에 개시물을 올렸어요!"
-      );
+      renderSideRankings();
+      refreshHeader();
+      let toastMsg = wantTimed
+        ? "24시간 타임어택 개시물을 올렸어요!"
+        : "만약에 개시물을 올렸어요!";
+      if (streakInfo.title) {
+        toastMsg +=
+          " 꾸준한 개시자 「" +
+          streakInfo.title.label +
+          "」 · 연속 " +
+          streakInfo.createStreak +
+          "일";
+      }
+      if (streakInfo.upgraded && streakInfo.title) {
+        toastMsg = "칭호 상승! 「" + streakInfo.title.label + "」 " + toastMsg;
+      }
+      showToast(toastMsg);
     });
 
     document.getElementById("logoLink").addEventListener("click", (e) => {
