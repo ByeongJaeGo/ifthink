@@ -918,6 +918,64 @@
       color: var(--muted);
       margin-bottom: 0.5rem;
     }
+
+    .my-posts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-height: min(60vh, 420px);
+      overflow-y: auto;
+    }
+
+    .my-post-item {
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 0.85rem 1rem;
+      text-align: left;
+    }
+
+    .my-post-item .my-post-text {
+      font-size: 0.98rem;
+      line-height: 1.4;
+      margin-bottom: 0.45rem;
+    }
+
+    .my-post-item .my-post-meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 0.65rem;
+    }
+
+    .my-post-item .my-post-actions {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+
+    .my-post-item .my-post-actions button {
+      width: auto;
+      flex: 1;
+      font-size: 0.82rem;
+      padding: 0.4rem 0.6rem;
+    }
+
+    .my-post-item .my-post-actions .danger {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .my-post-item .my-post-actions .danger:hover {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+    }
+
+    .my-posts-empty {
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding: 1.5rem 0.5rem;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -925,6 +983,7 @@
     <a href="/" class="logo" id="logoLink">ifthink</a>
     <div class="header-actions">
       <span class="user-chip hidden" id="userChip"></span>
+      <button type="button" id="myPostsBtn">내 작성글</button>
       <button type="button" id="createBtn">만약에 상황 생성하기</button>
       <button type="button" class="primary" id="authBtn">로그인</button>
     </div>
@@ -1002,7 +1061,7 @@
   <div class="overlay hidden" id="createOverlay">
     <div class="modal wide">
       <button type="button" class="close-x" data-close="createOverlay" aria-label="닫기">×</button>
-      <h2>토너먼트 개시</h2>
+      <h2 id="createTitle">토너먼트 개시</h2>
       <p class="hint" id="createHint">질문 1개 + 고를 상황을 2개 이상 쓰면, 사람들이 VS로 골라 나갑니다.</p>
       <form id="createForm">
         <label for="newScenario">질문 (만약에 상황)</label>
@@ -1018,6 +1077,16 @@
         <p class="msg" id="createMsg"></p>
         <button type="submit" class="primary" id="createSubmit">개시하기</button>
       </form>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="myPostsOverlay">
+    <div class="modal wide">
+      <button type="button" class="close-x" data-close="myPostsOverlay" aria-label="닫기">×</button>
+      <h2>내 작성글</h2>
+      <p class="hint">내가 올린 만약에만 보여요. 수정·삭제할 수 있습니다.</p>
+      <div class="my-posts-list" id="myPostsList"></div>
+      <p class="msg" id="myPostsMsg"></p>
     </div>
   </div>
 
@@ -1679,9 +1748,14 @@
     const empty = document.getElementById("empty");
     const authBtn = document.getElementById("authBtn");
     const createBtn = document.getElementById("createBtn");
+    const myPostsBtn = document.getElementById("myPostsBtn");
     const userChip = document.getElementById("userChip");
     const authOverlay = document.getElementById("authOverlay");
     const createOverlay = document.getElementById("createOverlay");
+    const myPostsOverlay = document.getElementById("myPostsOverlay");
+    const myPostsList = document.getElementById("myPostsList");
+    const myPostsMsg = document.getElementById("myPostsMsg");
+    const createTitle = document.getElementById("createTitle");
     const watchOverlay = document.getElementById("watchOverlay");
     const authForm = document.getElementById("authForm");
     const authMsg = document.getElementById("authMsg");
@@ -1829,6 +1903,7 @@
     let sortMode = "rank";
     let currentWatch = null;
     let pendingShareScenarioId = null;
+    let editingScenarioId = null;
     let bracket = [];
     let nextWinners = [];
     let matchIndex = 0;
@@ -1839,11 +1914,13 @@
 
     document.querySelectorAll("[data-close]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        closeOverlay(document.getElementById(btn.getAttribute("data-close")));
+        const id = btn.getAttribute("data-close");
+        if (id === "createOverlay") editingScenarioId = null;
+        closeOverlay(document.getElementById(id));
       });
     });
 
-    [authOverlay, createOverlay, watchOverlay, eventOverlay].forEach((overlay) => {
+    [authOverlay, createOverlay, watchOverlay, eventOverlay, myPostsOverlay].forEach((overlay) => {
       overlay.addEventListener("click", (e) => {
         if (e.target === overlay) closeOverlay(overlay);
       });
@@ -2426,22 +2503,45 @@
       }
     });
 
-    createBtn.addEventListener("click", () => {
-      const username = getSession();
-      if (!username || !getUser(username)) {
-        authMsg.textContent = "만들기 전에 로그인만 해 주세요. 약 3초면 돼요!";
-        openOverlay(authOverlay);
+    function isMyScenario(s) {
+      if (!s) return false;
+      if (currentAuthUser && s.authorUid && s.authorUid === currentAuthUser.uid) return true;
+      const nick = getSession();
+      return !!(nick && s.author === nick);
+    }
+
+    function getMyScenarios() {
+      return loadScenarios()
+        .filter(isMyScenario)
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+
+    function fillCreateFormWithScenario(scenario) {
+      document.getElementById("newScenario").value = scenario.text || "";
+      optionInputs.innerHTML = "";
+      const opts = normalizeOptions(scenario);
+      if (opts.length < MIN_OPTIONS) {
+        resetOptionInputs();
         return;
       }
-      const user = getUser(username);
-      const left = Math.max(0, 1 - (user.participations || 0));
+      opts.forEach((opt) => addOptionRow(opt));
+      renumberOptions();
+    }
+
+    function openCreateNew() {
+      editingScenarioId = null;
+      createTitle.textContent = "토너먼트 개시";
+      createSubmit.textContent = "개시하기";
       createMsg.textContent = "";
       document.getElementById("newScenario").value = "";
       resetOptionInputs();
+      const username = getSession();
+      const user = username ? getUser(username) : null;
+      const left = Math.max(0, 1 - ((user && user.participations) || 0));
       if (left > 0) {
         createHint.textContent =
           "아직 1번 더 참여해야 개시할 수 있습니다. (현재 " +
-          (user.participations || 0) +
+          ((user && user.participations) || 0) +
           "/1)";
         createSubmit.disabled = true;
       } else {
@@ -2449,13 +2549,126 @@
         createSubmit.disabled = false;
       }
       openOverlay(createOverlay);
+    }
+
+    function openEditScenario(id) {
+      const scenario = loadScenarios().find((s) => s.id === id);
+      if (!scenario || !isMyScenario(scenario)) {
+        myPostsMsg.textContent = "수정할 글을 찾을 수 없어요.";
+        return;
+      }
+      editingScenarioId = id;
+      createTitle.textContent = "작성글 수정";
+      createSubmit.textContent = "수정 저장";
+      createSubmit.disabled = false;
+      createMsg.textContent = "";
+      createHint.textContent = "질문과 상황을 고친 뒤 저장하세요. 기존 참여 수는 유지됩니다.";
+      fillCreateFormWithScenario(scenario);
+      closeOverlay(myPostsOverlay);
+      openOverlay(createOverlay);
+    }
+
+    function deleteScenario(id) {
+      if (!confirm("이 작성글을 삭제할까요? 댓글도 함께 사라집니다.")) return;
+      const list = loadScenarios().filter((s) => s.id !== id);
+      saveScenarios(list);
+      const map = loadComments();
+      if (map[id]) {
+        delete map[id];
+        saveComments(map);
+      }
+      if (currentWatch && currentWatch.id === id) {
+        closeOverlay(watchOverlay);
+        currentWatch = null;
+      }
+      renderMyPosts();
+      renderFeed();
+      myPostsMsg.textContent = "삭제됐어요.";
+      myPostsMsg.classList.add("ok");
+    }
+
+    function renderMyPosts() {
+      myPostsMsg.textContent = "";
+      myPostsMsg.classList.remove("ok");
+      const list = getMyScenarios();
+      if (!list.length) {
+        myPostsList.innerHTML = '<p class="my-posts-empty">아직 올린 작성글이 없어요.<br />먼저 「만약에 상황 생성하기」로 올려 보세요.</p>';
+        return;
+      }
+      myPostsList.innerHTML = list
+        .map((s) => {
+          const n = normalizeOptions(s).length;
+          return (
+            '<article class="my-post-item" data-id="' +
+            escapeHtml(s.id) +
+            '">' +
+            '<p class="my-post-text">' +
+            escapeHtml(s.text) +
+            "</p>" +
+            '<p class="my-post-meta">참여 ' +
+            (s.plays || 0) +
+            " · 상황 " +
+            n +
+            "개 · " +
+            formatCommentTime(s.createdAt) +
+            "</p>" +
+            '<div class="my-post-actions">' +
+            '<button type="button" data-action="edit">수정</button>' +
+            '<button type="button" class="danger" data-action="delete">삭제</button>' +
+            '<button type="button" data-action="open">열기</button>' +
+            "</div></article>"
+          );
+        })
+        .join("");
+
+      myPostsList.querySelectorAll(".my-post-item").forEach((row) => {
+        const id = row.getAttribute("data-id");
+        row.querySelectorAll("button[data-action]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const action = btn.getAttribute("data-action");
+            if (action === "edit") openEditScenario(id);
+            else if (action === "delete") deleteScenario(id);
+            else if (action === "open") {
+              const scenario = loadScenarios().find((s) => s.id === id);
+              if (scenario) {
+                closeOverlay(myPostsOverlay);
+                openWatch(scenario);
+              }
+            }
+          });
+        });
+      });
+    }
+
+    createBtn.addEventListener("click", () => {
+      const username = getSession();
+      if (!username || !getUser(username)) {
+        authMsg.textContent = "만들기 전에 로그인만 해 주세요. 약 3초면 돼요!";
+        openOverlay(authOverlay);
+        return;
+      }
+      openCreateNew();
+    });
+
+    myPostsBtn.addEventListener("click", () => {
+      if (!currentAuthUser && !getSession()) {
+        authMsg.textContent = "내 작성글을 보려면 로그인해 주세요.";
+        openOverlay(authOverlay);
+        return;
+      }
+      renderMyPosts();
+      openOverlay(myPostsOverlay);
     });
 
     createForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const username = getSession();
       const user = username ? getUser(username) : null;
-      if (!user || (user.participations || 0) < 1) {
+      if (!user) {
+        createMsg.textContent = "로그인이 필요합니다.";
+        return;
+      }
+      if (!editingScenarioId && (user.participations || 0) < 1) {
         createMsg.textContent = "1번 참여한 뒤에만 개시할 수 있습니다.";
         return;
       }
@@ -2484,10 +2697,41 @@
         return;
       }
 
+      const list = loadScenarios();
+
+      if (editingScenarioId) {
+        const idx = list.findIndex((s) => s.id === editingScenarioId);
+        if (idx < 0 || !isMyScenario(list[idx])) {
+          createMsg.textContent = "수정할 글을 찾을 수 없어요.";
+          return;
+        }
+        const prev = list[idx];
+        const oldWins = prev.wins || {};
+        const wins = {};
+        options.forEach((o) => {
+          wins[o] = oldWins[o] || 0;
+        });
+        list[idx] = {
+          ...prev,
+          text,
+          options,
+          wins,
+          author: username,
+          authorUid: currentAuthUser ? currentAuthUser.uid : prev.authorUid || null
+        };
+        saveScenarios(list);
+        editingScenarioId = null;
+        closeOverlay(createOverlay);
+        renderFeed();
+        renderMyPosts();
+        openOverlay(myPostsOverlay);
+        myPostsMsg.textContent = "수정했어요.";
+        myPostsMsg.classList.add("ok");
+        return;
+      }
+
       const wins = {};
       options.forEach((o) => { wins[o] = 0; });
-
-      const list = loadScenarios();
       list.push({
         id: "user-" + Date.now(),
         text,
