@@ -1538,12 +1538,26 @@
 
     function loadScenarios() {
       try {
+        let list;
         const raw = localStorage.getItem(STORAGE_SCENARIOS);
         if (!raw) {
-          localStorage.setItem(STORAGE_SCENARIOS, JSON.stringify(SEED));
-          return SEED.slice();
+          list = SEED.slice();
+        } else {
+          list = JSON.parse(raw);
         }
-        return JSON.parse(raw);
+        let changed = false;
+        list = list.map((s) => {
+          const t = String(s.text || "");
+          if (t.includes("오타니") && (s.plays || 0) !== 119) {
+            changed = true;
+            return { ...s, plays: 119 };
+          }
+          return s;
+        });
+        if (changed || !raw) {
+          localStorage.setItem(STORAGE_SCENARIOS, JSON.stringify(list));
+        }
+        return list;
       } catch {
         return SEED.slice();
       }
