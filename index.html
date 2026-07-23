@@ -713,6 +713,19 @@
 
     .card-meta .author { color: var(--fg); }
 
+    .card-meta .posted-at {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .watch-posted-at {
+      display: block;
+      margin-top: 0.2rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
     .card-comment-preview {
       margin-top: 0.7rem;
       padding-top: 0.65rem;
@@ -2743,6 +2756,39 @@
       if (diff < 86400000) return Math.floor(diff / 3600000) + "시간 전";
       return Math.floor(diff / 86400000) + "일 전";
     }
+    /** 개시 시각 — 날짜+시간 전부 (KST) */
+    function formatPostDateTime(ts) {
+      const n = Number(ts) || 0;
+      if (!n) return "일시 없음";
+      const d = new Date(n);
+      const parts = new Intl.DateTimeFormat("ko-KR", {
+        timeZone: "Asia/Seoul",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      }).formatToParts(d);
+      const get = (type) => {
+        const p = parts.find((x) => x.type === type);
+        return p ? p.value : "";
+      };
+      return (
+        get("year") +
+        "." +
+        get("month") +
+        "." +
+        get("day") +
+        " " +
+        get("hour") +
+        ":" +
+        get("minute") +
+        ":" +
+        get("second")
+      );
+    }
     function loadProfiles() {
       try { return JSON.parse(localStorage.getItem(STORAGE_PROFILES) || "{}"); }
       catch { return {}; }
@@ -3344,6 +3390,9 @@
             '<span class="author">' +
             escapeHtml(s.author) +
             "</span>" +
+            '<span class="posted-at" title="개시 시각">' +
+            escapeHtml(formatPostDateTime(s.createdAt)) +
+            "</span>" +
             "<span>참여 " +
             (s.plays || 0) +
             "</span>" +
@@ -3510,7 +3559,12 @@
       const remainLabel = isTimedScenario(scenario)
         ? " · 타임어택 " + formatRemain(getExpiresAt(scenario) - Date.now())
         : " · 토너먼트";
-      watchAuthor.textContent = scenario.author + remainLabel;
+      watchAuthor.innerHTML =
+        escapeHtml(scenario.author) +
+        escapeHtml(remainLabel) +
+        '<span class="watch-posted-at">개시 ' +
+        escapeHtml(formatPostDateTime(scenario.createdAt)) +
+        "</span>";
       commentMsg.textContent = "";
       commentInput.value = "";
       renderComments(scenario.id);
@@ -4005,13 +4059,13 @@
             '<p class="my-post-text">' +
             escapeHtml(s.text) +
             "</p>" +
-            '<p class="my-post-meta">참여 ' +
+            '<p class="my-post-meta">개시 ' +
+            escapeHtml(formatPostDateTime(s.createdAt)) +
+            " · 참여 " +
             (s.plays || 0) +
             " · 상황 " +
             n +
-            "개 · " +
-            formatCommentTime(s.createdAt) +
-            "</p>" +
+            "개</p>" +
             '<div class="my-post-actions">' +
             '<button type="button" data-action="edit">수정</button>' +
             '<button type="button" class="danger" data-action="delete">삭제</button>' +
