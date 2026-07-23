@@ -2736,6 +2736,8 @@
       bindCommentLikeButtons(grid);
       renderSideRankings();
     }
+
+    document.querySelectorAll(".sort-bar button").forEach((btn) => {
       btn.addEventListener("click", () => {
         sortMode = btn.getAttribute("data-sort");
         document.querySelectorAll(".sort-bar button").forEach((b) => {
