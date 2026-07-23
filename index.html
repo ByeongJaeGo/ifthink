@@ -281,10 +281,98 @@
     .share-box .share-actions {
       display: flex;
       gap: 0.5rem;
+      margin-top: 0.55rem;
     }
 
     .share-box .share-actions button {
       flex: 1;
+    }
+
+    .share-box {
+      margin-top: 1.1rem;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      text-align: left;
+    }
+
+    .share-box.hidden { display: none; }
+
+    .share-box .share-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+    }
+
+    .share-box .share-block {
+      margin-bottom: 0.85rem;
+    }
+
+    .share-box .share-block:last-of-type {
+      margin-bottom: 0.65rem;
+    }
+
+    .share-box pre {
+      font: inherit;
+      white-space: pre-wrap;
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 0.85rem 1rem;
+      line-height: 1.5;
+      margin: 0;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    .share-link-box {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 0.75rem;
+    }
+
+    .share-link-box input {
+      width: 100%;
+      font: inherit;
+      font-size: 0.82rem;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--fg);
+      padding: 0.65rem 0.75rem;
+      outline: none;
+      margin: 0;
+      user-select: all;
+      -webkit-user-select: all;
+    }
+
+    .share-link-box input:focus {
+      border-color: var(--accent);
+    }
+
+    .share-link-box .share-link-actions {
+      display: flex;
+      gap: 0.45rem;
+    }
+
+    .share-link-box .share-link-actions button {
+      flex: 1;
+      width: auto;
+      font-size: 0.82rem;
+      padding: 0.5rem 0.65rem;
+    }
+
+    .share-box button {
+      width: 100%;
+    }
+
+    .share-box .share-copied {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #2a7a4b;
+      margin-top: 0.45rem;
+      min-height: 1.2em;
     }
 
     .card {
@@ -671,44 +759,6 @@
 
     .watch-result.hidden { display: none; }
 
-    .share-box {
-      margin-top: 1.1rem;
-      padding: 1rem;
-      border: 1px solid var(--accent);
-      background: #fffdf6;
-      text-align: left;
-    }
-
-    .share-box.hidden { display: none; }
-
-    .share-box .share-label {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-bottom: 0.45rem;
-    }
-
-    .share-box pre {
-      font: inherit;
-      white-space: pre-wrap;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      padding: 0.85rem 1rem;
-      line-height: 1.5;
-      margin-bottom: 0.65rem;
-    }
-
-    .share-box button {
-      width: 100%;
-    }
-
-    .share-box .share-copied {
-      text-align: center;
-      font-size: 0.85rem;
-      color: #2a7a4b;
-      margin-top: 0.45rem;
-      min-height: 1.2em;
-    }
-
     .comments {
       margin-top: 1.15rem;
       padding-top: 1rem;
@@ -984,14 +1034,21 @@
       </div>
       <p class="watch-result hidden" id="watchResult"></p>
       <div class="share-box hidden" id="shareBox">
-        <p class="share-label">결과 공유</p>
-        <pre id="shareText"></pre>
-        <div class="share-link-row">
-          <input id="shareLinkInput" readonly />
-          <button type="button" id="copyLinkBtn">링크 복사</button>
+        <div class="share-block">
+          <p class="share-label">공유 문장</p>
+          <pre id="shareText"></pre>
+          <div class="share-actions">
+            <button type="button" class="primary" id="copyShareBtn">문장 복사</button>
+          </div>
         </div>
-        <div class="share-actions">
-          <button type="button" class="primary" id="copyShareBtn">문장 복사</button>
+        <div class="share-block">
+          <p class="share-label">공유 링크</p>
+          <div class="share-link-box">
+            <input id="shareLinkInput" readonly />
+            <div class="share-link-actions">
+              <button type="button" id="copyLinkBtn">링크 복사</button>
+            </div>
+          </div>
         </div>
         <p class="share-copied" id="shareCopied"></p>
       </div>
@@ -2153,8 +2210,7 @@
           percent +
           "% (" +
           vibeShort +
-          ")\n너도 해봐 → " +
-          shareUrl;
+          ")\n너도 해봐 → ifthink";
       }
       if (shareLinkInput) shareLinkInput.value = shareUrl;
       if (shareCopied) shareCopied.textContent = "";
