@@ -337,6 +337,67 @@
 
     .card-meta .author { color: var(--fg); }
 
+    .card-comment-preview {
+      margin-top: 0.7rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .card-comment-preview .preview-who {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.2rem;
+    }
+
+    .card-comment-preview .preview-body {
+      font-size: 0.86rem;
+      line-height: 1.4;
+      color: var(--fg);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 0.4rem;
+    }
+
+    .card-comment-preview .preview-empty {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .comment-like-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.28rem;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 0.78rem;
+      padding: 0.15rem 0;
+      cursor: pointer;
+      width: auto;
+      border-radius: 0;
+    }
+
+    .comment-like-btn:hover {
+      color: var(--fg);
+      border: none;
+    }
+
+    .comment-like-btn.liked {
+      color: #c45c4a;
+    }
+
+    .comment-like-btn .heart {
+      font-size: 0.85rem;
+      line-height: 1;
+    }
+
+    .comment-item .comment-actions {
+      margin-top: 0.35rem;
+    }
+
     .badge {
       font-size: 0.7rem;
       letter-spacing: 0.04em;
@@ -436,6 +497,27 @@
     }
 
     .msg.ok { color: #2a7a4b; }
+
+    .promo-event-btn {
+      display: inline-block;
+      margin-left: 0.55rem;
+      margin-top: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.82rem;
+      border: 1px solid var(--accent);
+      background: transparent;
+      color: var(--accent);
+      cursor: pointer;
+      width: auto;
+      border-radius: 0;
+      vertical-align: middle;
+    }
+
+    .promo-event-btn:hover {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
 
     .empty {
       color: var(--muted);
@@ -765,8 +847,9 @@
 
   <p class="notice">로그인하고 <strong>참여 1번</strong> 하면 만약에 상황을 개시할 수 있습니다.</p>
   <p class="notice promo">
-    이번 주 동안 <strong>만약에 개시물</strong>을 올린 참여자 중 추첨으로
+    이번 주 동안 <strong>만약에 개시물</strong>을 올린 참여자 중 5분 추첨으로
     <strong>스타벅스 아메리카노 Tall 1잔</strong>을 드립니다.
+    <button type="button" class="promo-event-btn" id="eventApplyBtn">이벤트 응모하기</button>
   </p>
 
   <div class="share-landing hidden" id="shareLanding">
@@ -796,20 +879,37 @@
     <div class="modal">
       <button type="button" class="close-x" data-close="authOverlay" aria-label="닫기">×</button>
       <h2>로그인</h2>
-      <p class="hint">닉네임과 비밀번호만 있으면 돼요. 약 3초면 로그인·가입이 끝나요.</p>
+      <p class="hint">이메일로 가입·로그인하세요. (Google은 Firebase Console에서 Google 로그인을 켠 뒤 사용할 수 있어요.)</p>
+      <button type="button" class="primary" id="googleSignInBtn" style="width:100%;margin-bottom:0.85rem;">Google로 계속하기</button>
+      <p class="hint" style="text-align:center;margin-bottom:0.75rem;">또는 이메일</p>
       <form id="authForm">
-        <label for="username">닉네임</label>
-        <div class="nick-row">
-          <input id="username" required minlength="2" maxlength="20" autocomplete="username" placeholder="예: 사과파이" />
-          <button type="button" id="checkNickBtn">중복확인</button>
-        </div>
+        <label for="authEmail">이메일</label>
+        <input id="authEmail" type="email" required autocomplete="email" placeholder="you@email.com" />
         <label for="password">비밀번호</label>
-        <input id="password" type="password" required minlength="4" maxlength="40" autocomplete="current-password" />
+        <input id="password" type="password" required minlength="6" maxlength="40" autocomplete="current-password" />
+        <label for="username">닉네임 (가입·표시용)</label>
+        <input id="username" minlength="2" maxlength="20" autocomplete="nickname" placeholder="예: 사과파이" />
         <p class="msg" id="authMsg"></p>
         <div class="row">
           <button type="submit" class="primary">로그인</button>
           <button type="button" id="signupBtn">회원가입</button>
         </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="eventOverlay">
+    <div class="modal">
+      <button type="button" class="close-x" data-close="eventOverlay" aria-label="닫기">×</button>
+      <h2>스타벅스 이벤트 응모</h2>
+      <p class="hint">로그인 후 닉네임·이메일을 남기면 Firebase에 저장돼요. 당첨 시 기프티콘을 보내 드립니다.</p>
+      <form id="eventForm">
+        <label for="eventNickname">닉네임</label>
+        <input id="eventNickname" required minlength="2" maxlength="20" placeholder="표시 닉네임" />
+        <label for="eventEmail">이메일 (기프티콘 수신)</label>
+        <input id="eventEmail" type="email" required placeholder="you@email.com" />
+        <p class="msg" id="eventMsg"></p>
+        <button type="submit" class="primary" id="eventSubmit">응모하기</button>
       </form>
     </div>
   </div>
@@ -878,11 +978,27 @@
     </div>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore-compat.js"></script>
   <script>
-    const STORAGE_USERS = "ifthink_users_v2";
-    const STORAGE_SESSION = "ifthink_session_v2";
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyCqQZ4-Godxlbp_YupqfttmDi1MweOg4mg",
+      authDomain: "ifthink-c1bab.firebaseapp.com",
+      projectId: "ifthink-c1bab",
+      storageBucket: "ifthink-c1bab.firebasestorage.app",
+      messagingSenderId: "622336640531",
+      appId: "1:622336640531:web:de1f78c38fd4528718e1e6",
+      measurementId: "G-PDRT4CMZD8"
+    };
+    firebase.initializeApp(FIREBASE_CONFIG);
+    const fbAuth = firebase.auth();
+    const fbDb = firebase.firestore();
+
+    const STORAGE_PROFILES = "ifthink_profiles_v1";
     const STORAGE_SCENARIOS = "ifthink_scenarios_v7";
-    const STORAGE_COMMENTS = "ifthink_comments_v2";
+    const STORAGE_COMMENTS = "ifthink_comments_v3";
+    let currentAuthUser = null;
 
     const SEED_COMMENTS = {
       "seed-ex-1": [
@@ -1215,13 +1331,6 @@
       }
     ];
 
-    function loadUsers() {
-      try { return JSON.parse(localStorage.getItem(STORAGE_USERS) || "{}"); }
-      catch { return {}; }
-    }
-    function saveUsers(users) {
-      localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
-    }
     function loadScenarios() {
       try {
         const raw = localStorage.getItem(STORAGE_SCENARIOS);
@@ -1237,25 +1346,59 @@
     function saveScenarios(list) {
       localStorage.setItem(STORAGE_SCENARIOS, JSON.stringify(list));
     }
+    function defaultSeedLikes(id) {
+      let h = 0;
+      const s = String(id || "");
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+      return (h % 17) + 1;
+    }
+    function normalizeComment(c) {
+      const likes =
+        typeof c.likes === "number"
+          ? c.likes
+          : defaultSeedLikes(c.id);
+      return {
+        ...c,
+        likes,
+        likedBy: Array.isArray(c.likedBy) ? c.likedBy : []
+      };
+    }
+    function normalizeCommentsMap(map) {
+      const out = {};
+      Object.keys(map || {}).forEach((sid) => {
+        out[sid] = (map[sid] || []).map(normalizeComment);
+      });
+      return out;
+    }
     function loadComments() {
       try {
         const raw = localStorage.getItem(STORAGE_COMMENTS);
         if (!raw) {
-          localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(SEED_COMMENTS));
-          return JSON.parse(JSON.stringify(SEED_COMMENTS));
+          const seeded = normalizeCommentsMap(SEED_COMMENTS);
+          localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(seeded));
+          return seeded;
         }
-        return JSON.parse(raw);
+        return normalizeCommentsMap(JSON.parse(raw));
       } catch {
-        return JSON.parse(JSON.stringify(SEED_COMMENTS));
+        return normalizeCommentsMap(SEED_COMMENTS);
       }
     }
     function saveComments(map) {
-      localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(map));
+      localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(normalizeCommentsMap(map)));
     }
     function getCommentsFor(scenarioId) {
       const map = loadComments();
       const list = map[scenarioId] || [];
       return list.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+    function getTopComment(scenarioId) {
+      const list = getCommentsFor(scenarioId);
+      if (!list.length) return null;
+      return list.slice().sort((a, b) => {
+        const likeDiff = (b.likes || 0) - (a.likes || 0);
+        if (likeDiff !== 0) return likeDiff;
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      })[0];
     }
     function addComment(scenarioId, author, text) {
       const map = loadComments();
@@ -1264,10 +1407,73 @@
         id: "c-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
         author,
         text,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        likes: 0,
+        likedBy: []
       });
       saveComments(map);
       return getCommentsFor(scenarioId);
+    }
+    function toggleCommentLike(scenarioId, commentId, username) {
+      if (!username) return { ok: false, reason: "login" };
+      const map = loadComments();
+      const list = map[scenarioId] || [];
+      const comment = list.find((c) => c.id === commentId);
+      if (!comment) return { ok: false, reason: "missing" };
+      const likedBy = Array.isArray(comment.likedBy) ? comment.likedBy.slice() : [];
+      const idx = likedBy.indexOf(username);
+      if (idx >= 0) {
+        likedBy.splice(idx, 1);
+        comment.likes = Math.max(0, (comment.likes || 0) - 1);
+      } else {
+        likedBy.push(username);
+        comment.likes = (comment.likes || 0) + 1;
+      }
+      comment.likedBy = likedBy;
+      map[scenarioId] = list;
+      saveComments(map);
+      return { ok: true, liked: idx < 0, likes: comment.likes };
+    }
+    function renderLikeButton(scenarioId, comment, username) {
+      const liked = username && (comment.likedBy || []).includes(username);
+      return (
+        '<button type="button" class="comment-like-btn' +
+        (liked ? " liked" : "") +
+        '" data-scenario="' +
+        escapeHtml(scenarioId) +
+        '" data-comment="' +
+        escapeHtml(comment.id) +
+        '" aria-label="좋아요">' +
+        '<span class="heart">' +
+        (liked ? "♥" : "♡") +
+        "</span>" +
+        "<span>" +
+        (comment.likes || 0) +
+        "</span></button>"
+      );
+    }
+    function bindCommentLikeButtons(root) {
+      if (!root) return;
+      root.querySelectorAll(".comment-like-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const username = getSession();
+          if (!username) {
+            authMsg.textContent = "좋아요하려면 로그인만 하면 돼요. 약 3초면 끝나요!";
+            openOverlay(authOverlay);
+            return;
+          }
+          const scenarioId = btn.getAttribute("data-scenario");
+          const commentId = btn.getAttribute("data-comment");
+          const result = toggleCommentLike(scenarioId, commentId, username);
+          if (!result.ok) return;
+          if (currentWatch && currentWatch.id === scenarioId) {
+            renderComments(scenarioId);
+          }
+          renderFeed();
+        });
+      });
     }
     function formatCommentTime(ts) {
       const diff = Date.now() - (ts || 0);
@@ -1276,21 +1482,74 @@
       if (diff < 86400000) return Math.floor(diff / 3600000) + "시간 전";
       return Math.floor(diff / 86400000) + "일 전";
     }
-    function getSession() {
-      return localStorage.getItem(STORAGE_SESSION);
+    function loadProfiles() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_PROFILES) || "{}"); }
+      catch { return {}; }
     }
-    function setSession(username) {
-      if (username) localStorage.setItem(STORAGE_SESSION, username);
-      else localStorage.removeItem(STORAGE_SESSION);
+    function saveProfiles(map) {
+      localStorage.setItem(STORAGE_PROFILES, JSON.stringify(map));
+    }
+    function defaultNicknameFromAuth(user) {
+      if (!user) return "";
+      if (user.displayName && user.displayName.trim()) return user.displayName.trim().slice(0, 20);
+      if (user.email) return user.email.split("@")[0].slice(0, 20);
+      return "user";
+    }
+    function ensureProfile(user) {
+      if (!user) return null;
+      const map = loadProfiles();
+      if (!map[user.uid]) {
+        map[user.uid] = {
+          nickname: defaultNicknameFromAuth(user),
+          email: user.email || "",
+          participations: 0,
+          doneIds: []
+        };
+        saveProfiles(map);
+      } else if (user.email && !map[user.uid].email) {
+        map[user.uid].email = user.email;
+        saveProfiles(map);
+      }
+      return map[user.uid];
+    }
+    function getCurrentProfile() {
+      return currentAuthUser ? ensureProfile(currentAuthUser) : null;
+    }
+    function getSession() {
+      const p = getCurrentProfile();
+      return p ? p.nickname : null;
     }
     function getUser(username) {
-      return loadUsers()[username] || null;
+      const p = getCurrentProfile();
+      if (!p) return null;
+      if (username && username !== p.nickname) return null;
+      return p;
     }
     function updateUser(username, patch) {
-      const users = loadUsers();
-      users[username] = { ...users[username], ...patch };
-      saveUsers(users);
-      return users[username];
+      if (!currentAuthUser) return null;
+      const map = loadProfiles();
+      const uid = currentAuthUser.uid;
+      map[uid] = { ...ensureProfile(currentAuthUser), ...patch };
+      if (username && typeof username === "string" && !patch.nickname) {
+        // keep nickname unless patch sets it
+      }
+      saveProfiles(map);
+      return map[uid];
+    }
+    function setSession() { /* Firebase Auth manages session */ }
+    function authErrorMessage(err) {
+      const code = err && err.code;
+      if (code === "auth/email-already-in-use") return "이미 가입된 이메일입니다. 로그인 해 주세요.";
+      if (code === "auth/invalid-email") return "이메일 형식을 확인해 주세요.";
+      if (code === "auth/weak-password") return "비밀번호는 6자 이상으로 해 주세요.";
+      if (code === "auth/user-not-found" || code === "auth/wrong-password" || code === "auth/invalid-credential") {
+        return "이메일 또는 비밀번호가 맞지 않습니다.";
+      }
+      if (code === "auth/popup-closed-by-user") return "로그인이 취소됐어요.";
+      if (code === "auth/unauthorized-domain") {
+        return "이 도메인이 Firebase에 허용되지 않았어요. Console에서 Authorized domains를 확인해 주세요.";
+      }
+      return (err && err.message) || "로그인에 실패했어요.";
     }
     function escapeHtml(str) {
       return String(str)
@@ -1333,8 +1592,15 @@
     const authForm = document.getElementById("authForm");
     const authMsg = document.getElementById("authMsg");
     const signupBtn = document.getElementById("signupBtn");
-    const checkNickBtn = document.getElementById("checkNickBtn");
+    const googleSignInBtn = document.getElementById("googleSignInBtn");
     const usernameInput = document.getElementById("username");
+    const authEmailInput = document.getElementById("authEmail");
+    const eventOverlay = document.getElementById("eventOverlay");
+    const eventApplyBtn = document.getElementById("eventApplyBtn");
+    const eventForm = document.getElementById("eventForm");
+    const eventMsg = document.getElementById("eventMsg");
+    const eventNickname = document.getElementById("eventNickname");
+    const eventEmail = document.getElementById("eventEmail");
     const createForm = document.getElementById("createForm");
     const createMsg = document.getElementById("createMsg");
     const createHint = document.getElementById("createHint");
@@ -1365,8 +1631,6 @@
     const commentInput = document.getElementById("commentInput");
     const commentMsg = document.getElementById("commentMsg");
 
-    let nickChecked = "";
-    let nickAvailable = false;
     let sortMode = "rank";
     let currentWatch = null;
     let pendingShareScenarioId = null;
@@ -1415,17 +1679,16 @@
       });
     });
 
-    [authOverlay, createOverlay, watchOverlay].forEach((overlay) => {
+    [authOverlay, createOverlay, watchOverlay, eventOverlay].forEach((overlay) => {
       overlay.addEventListener("click", (e) => {
         if (e.target === overlay) closeOverlay(overlay);
       });
     });
 
     function refreshHeader() {
-      const username = getSession();
-      const user = username ? getUser(username) : null;
-      if (user) {
-        userChip.textContent = username + " · 참여 " + Math.min(user.participations || 0, 1) + "/1";
+      const profile = getCurrentProfile();
+      if (profile && currentAuthUser) {
+        userChip.textContent = profile.nickname + " · 참여 " + Math.min(profile.participations || 0, 1) + "/1";
         userChip.classList.remove("hidden");
         authBtn.textContent = "로그아웃";
       } else {
@@ -1503,7 +1766,23 @@
           const thumbRank = showRank
             ? '<span class="thumb-rank rank-badge ' + rClass + '">' + (i + 1) + "위</span>"
             : "";
-          const commentsLen = getCommentsFor(s.id).length;
+          const comments = getCommentsFor(s.id);
+          const commentsLen = comments.length;
+          const username = getSession();
+          const topComment = getTopComment(s.id);
+          const previewHtml = topComment
+            ? '<div class="card-comment-preview">' +
+              '<p class="preview-who">' +
+              escapeHtml(topComment.author) +
+              " · " +
+              formatCommentTime(topComment.createdAt) +
+              "</p>" +
+              '<p class="preview-body">' +
+              escapeHtml(topComment.text) +
+              "</p>" +
+              renderLikeButton(s.id, topComment, username) +
+              "</div>"
+            : '<div class="card-comment-preview"><p class="preview-empty">아직 댓글이 없어요</p></div>';
           return (
             '<article class="card ' +
             cClass +
@@ -1529,7 +1808,9 @@
             '<span class="badge">' +
             n +
             "강 토너먼트</span>" +
-            "</p></div></article>"
+            "</p>" +
+            previewHtml +
+            "</div></article>"
           );
         })
         .join("");
@@ -1541,6 +1822,7 @@
           if (scenario) openWatch(scenario);
         });
       });
+      bindCommentLikeButtons(grid);
     }
 
     document.querySelectorAll(".sort-bar button").forEach((btn) => {
@@ -1580,6 +1862,7 @@
 
     function renderComments(scenarioId) {
       const list = getCommentsFor(scenarioId);
+      const username = getSession();
       commentCount.textContent = list.length + "개";
       if (!list.length) {
         commentList.innerHTML = '<p class="comment-empty">첫 댓글을 남겨 보세요.</p>';
@@ -1596,9 +1879,12 @@
             "</span></p>" +
             '<p class="body">' +
             escapeHtml(c.text) +
-            "</p></article>"
+            '</p><div class="comment-actions">' +
+            renderLikeButton(scenarioId, c, username) +
+            "</div></article>"
         )
         .join("");
+      bindCommentLikeButtons(commentList);
     }
 
     function openWatch(scenario) {
@@ -1648,6 +1934,11 @@
 
       const username = getSession();
       const user = getUser(username);
+      if (!user) {
+        watchResult.textContent = "로그인이 풀렸어요. 다시 로그인한 뒤 참여해 주세요.";
+        watchResult.classList.remove("hidden");
+        return;
+      }
       const doneIds = user.doneIds || [];
       const already = doneIds.includes(currentWatch.id);
 
@@ -1796,18 +2087,15 @@
       renderFeed();
     });
 
-    authBtn.addEventListener("click", () => {
-      const username = getSession();
-      if (username && getUser(username)) {
-        setSession(null);
+    authBtn.addEventListener("click", async () => {
+      if (currentAuthUser) {
+        await fbAuth.signOut();
         refreshHeader();
         return;
       }
       authMsg.textContent = "";
       authMsg.classList.remove("ok");
       authForm.reset();
-      nickChecked = "";
-      nickAvailable = false;
       openOverlay(authOverlay);
     });
 
@@ -1815,70 +2103,134 @@
       return String(raw || "").trim();
     }
 
-    checkNickBtn.addEventListener("click", () => {
+    function applyNicknameFromForm() {
       const nick = normalizeNick(usernameInput.value);
+      if (nick.length >= 2 && currentAuthUser) {
+        updateUser(null, { nickname: nick });
+      }
+    }
+
+    googleSignInBtn.addEventListener("click", async () => {
       authMsg.classList.remove("ok");
-      if (nick.length < 2) {
-        authMsg.textContent = "닉네임은 2자 이상이어야 합니다.";
-        nickChecked = "";
-        nickAvailable = false;
-        return;
+      authMsg.textContent = "";
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await fbAuth.signInWithPopup(provider);
+        applyNicknameFromForm();
+        closeOverlay(authOverlay);
+        refreshHeader();
+      } catch (err) {
+        authMsg.textContent = authErrorMessage(err);
       }
-      if (getUser(nick)) {
-        authMsg.textContent = "이미 사용 중인 닉네임입니다.";
-        nickChecked = nick;
-        nickAvailable = false;
-        return;
-      }
-      authMsg.textContent = "사용 가능한 닉네임입니다.";
-      authMsg.classList.add("ok");
-      nickChecked = nick;
-      nickAvailable = true;
     });
 
-    usernameInput.addEventListener("input", () => {
-      nickChecked = "";
-      nickAvailable = false;
-      authMsg.classList.remove("ok");
-    });
-
-    authForm.addEventListener("submit", (e) => {
+    authForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       authMsg.classList.remove("ok");
-      const username = normalizeNick(usernameInput.value);
+      const email = (authEmailInput.value || "").trim();
       const password = document.getElementById("password").value;
-      const user = getUser(username);
-      if (!user || user.password !== password) {
-        authMsg.textContent = "닉네임 또는 비밀번호가 맞지 않습니다.";
-        return;
+      try {
+        await fbAuth.signInWithEmailAndPassword(email, password);
+        applyNicknameFromForm();
+        closeOverlay(authOverlay);
+        refreshHeader();
+      } catch (err) {
+        authMsg.textContent = authErrorMessage(err);
       }
-      setSession(username);
-      closeOverlay(authOverlay);
-      refreshHeader();
     });
 
-    signupBtn.addEventListener("click", () => {
+    signupBtn.addEventListener("click", async () => {
       authMsg.classList.remove("ok");
-      const username = normalizeNick(usernameInput.value);
+      const email = (authEmailInput.value || "").trim();
       const password = document.getElementById("password").value;
-      if (username.length < 2 || password.length < 4) {
-        authMsg.textContent = "닉네임 2자 이상, 비밀번호 4자 이상으로 적어 주세요.";
+      const nick = normalizeNick(usernameInput.value);
+      if (!email || password.length < 6) {
+        authMsg.textContent = "이메일과 비밀번호(6자 이상)를 적어 주세요.";
         return;
       }
-      if (nickChecked !== username || !nickAvailable) {
-        authMsg.textContent = "먼저 닉네임 중복확인을 해 주세요.";
+      if (nick.length < 2) {
+        authMsg.textContent = "닉네임은 2자 이상으로 적어 주세요.";
         return;
       }
-      const users = loadUsers();
-      if (users[username]) {
-        authMsg.textContent = "이미 사용 중인 닉네임입니다.";
+      try {
+        await fbAuth.createUserWithEmailAndPassword(email, password);
+        updateUser(null, { nickname: nick, email });
+        closeOverlay(authOverlay);
+        refreshHeader();
+      } catch (err) {
+        authMsg.textContent = authErrorMessage(err);
+      }
+    });
+
+    function openEventApply() {
+      if (!currentAuthUser) {
+        authMsg.textContent = "이벤트 응모 전에 Firebase 로그인을 해 주세요.";
+        openOverlay(authOverlay);
         return;
       }
-      users[username] = { password, participations: 0, doneIds: [] };
-      saveUsers(users);
-      setSession(username);
-      closeOverlay(authOverlay);
-      refreshHeader();
+      const profile = getCurrentProfile();
+      eventMsg.textContent = "";
+      eventMsg.classList.remove("ok");
+      eventNickname.value = profile.nickname || "";
+      eventEmail.value = profile.email || currentAuthUser.email || "";
+      openOverlay(eventOverlay);
+    }
+
+    eventApplyBtn.addEventListener("click", openEventApply);
+
+    eventForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      eventMsg.classList.remove("ok");
+      if (!currentAuthUser) {
+        eventMsg.textContent = "로그인이 필요합니다.";
+        return;
+      }
+      const nickname = normalizeNick(eventNickname.value);
+      const email = (eventEmail.value || "").trim();
+      if (nickname.length < 2) {
+        eventMsg.textContent = "닉네임은 2자 이상이어야 합니다.";
+        return;
+      }
+      if (!email || !email.includes("@")) {
+        eventMsg.textContent = "이메일을 확인해 주세요.";
+        return;
+      }
+
+      const hasPosted = loadScenarios().some(
+        (s) => s.authorUid === currentAuthUser.uid || s.author === nickname
+      );
+      if (!hasPosted) {
+        eventMsg.textContent = "이번 이벤트는 개시물을 올린 분만 응모할 수 있어요. 먼저 상황을 개시해 주세요.";
+        return;
+      }
+
+      const submitBtn = document.getElementById("eventSubmit");
+      submitBtn.disabled = true;
+      try {
+        const ref = fbDb.collection("eventEntries").doc(currentAuthUser.uid);
+        const existing = await ref.get();
+        const now = firebase.firestore.FieldValue.serverTimestamp();
+        const payload = {
+          uid: currentAuthUser.uid,
+          nickname,
+          email,
+          source: "starbucks_week",
+          scenarioId: null,
+          updatedAt: now
+        };
+        if (existing.exists) {
+          await ref.update(payload);
+        } else {
+          await ref.set({ ...payload, createdAt: now });
+        }
+        updateUser(null, { nickname, email });
+        eventMsg.textContent = "응모 완료! Firebase Console → Firestore → eventEntries 에서 확인할 수 있어요.";
+        eventMsg.classList.add("ok");
+      } catch (err) {
+        eventMsg.textContent = (err && err.message) || "응모에 실패했어요. 잠시 후 다시 시도해 주세요.";
+      } finally {
+        submitBtn.disabled = false;
+      }
     });
 
     createBtn.addEventListener("click", () => {
@@ -1936,6 +2288,7 @@
         options,
         wins,
         author: username,
+        authorUid: currentAuthUser ? currentAuthUser.uid : null,
         plays: 0,
         createdAt: Date.now()
       });
@@ -1977,6 +2330,12 @@
       const id = pendingShareScenarioId;
       const scenario = loadScenarios().find((s) => s.id === id);
       if (scenario) openWatch(scenario);
+    });
+
+    fbAuth.onAuthStateChanged((user) => {
+      currentAuthUser = user;
+      if (user) ensureProfile(user);
+      refreshHeader();
     });
 
     refreshHeader();
