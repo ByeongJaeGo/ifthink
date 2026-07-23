@@ -867,10 +867,6 @@
     }
 
     .thumb-timer {
-      position: absolute;
-      top: 0.55rem;
-      right: 0.55rem;
-      z-index: 1;
       font-size: 0.72rem;
       letter-spacing: 0.02em;
       padding: 0.2rem 0.45rem;
@@ -879,6 +875,9 @@
       color: #f0d78c;
       line-height: 1.2;
       white-space: nowrap;
+      cursor: help;
+      font: inherit;
+      display: inline-block;
     }
 
     .thumb-timer.expired {
@@ -890,49 +889,36 @@
 
     .thumb-timer-wrap {
       position: absolute;
-      top: 0.45rem;
-      left: 0.45rem;
-      right: 0.45rem;
-      z-index: 2;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 0.45rem;
-      pointer-events: none;
+      top: 0.55rem;
+      right: 0.55rem;
+      z-index: 3;
+      max-width: min(72%, 14rem);
     }
 
-    .thumb-timer-wrap.with-rank {
-      left: 3.1rem;
-    }
-
-    .thumb-timer-wrap .thumb-timer {
-      position: static;
-      display: inline-block;
-      flex: 0 0 auto;
-      pointer-events: auto;
-    }
-
-    .thumb-timer-note {
-      flex: 1;
-      min-width: 0;
+    .thumb-timer-tip {
+      display: none;
+      position: absolute;
+      top: calc(100% + 0.35rem);
+      right: 0;
+      width: max-content;
+      max-width: 12.5rem;
       margin: 0;
-      padding: 0.28rem 0.45rem;
+      padding: 0.4rem 0.55rem;
       font-size: 0.72rem;
       font-weight: 600;
       line-height: 1.35;
       text-align: left;
       color: #1a1a1a;
-      background: rgba(255, 248, 220, 0.95);
+      background: #fff8dc;
       border: 1px solid rgba(26, 26, 26, 0.55);
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+      pointer-events: none;
     }
 
-    .thumb-timer-note.expired {
-      color: #5a5a5a;
-      background: rgba(245, 245, 245, 0.95);
-      border-style: dashed;
-      border-color: var(--line);
-      font-weight: 500;
+    .thumb-timer-wrap:hover .thumb-timer-tip,
+    .thumb-timer-wrap:focus-within .thumb-timer-tip,
+    .thumb-timer-wrap.is-open .thumb-timer-tip {
+      display: block;
     }
 
     .card.timed-card {
@@ -3367,22 +3353,21 @@
           const timed = isTimedScenario(s);
           const expired = isTimedExpired(s);
           const remainMs = getExpiresAt(s) - Date.now();
+          const timerNote = expired
+            ? "시간이 지나 참여할 수 없는 개시물입니다."
+            : "일정 시간이 지나면 참여할 수 없는 개시물입니다.";
           const timerHtml = timed
-            ? '<div class="thumb-timer-wrap' +
-              (showRank ? " with-rank" : "") +
-              '">' +
-              '<p class="thumb-timer-note' +
+            ? '<div class="thumb-timer-wrap">' +
+              '<button type="button" class="thumb-timer' +
               (expired ? " expired" : "") +
-              '">' +
-              (expired
-                ? "시간이 지나 참여할 수 없는 개시물입니다."
-                : "일정 시간이 지나면 참여할 수 없는 개시물입니다.") +
-              "</p>" +
-              '<span class="thumb-timer' +
-              (expired ? " expired" : "") +
+              '" aria-label="타임어택 남은 시간" title="' +
+              escapeHtml(timerNote) +
               '">' +
               (expired ? "종료" : formatRemain(remainMs)) +
-              "</span></div>"
+              "</button>" +
+              '<p class="thumb-timer-tip" role="tooltip">' +
+              escapeHtml(timerNote) +
+              "</p></div>"
             : "";
           const timedClass =
             (timed ? " timed-card" : "") + (expired ? " timed-expired" : "");
@@ -3436,6 +3421,7 @@
       grid.querySelectorAll(".card").forEach((card) => {
         card.addEventListener("click", (e) => {
           if (e.target.closest(".card-share")) return;
+          if (e.target.closest(".thumb-timer-wrap")) return;
           const id = card.getAttribute("data-id");
           const scenario = loadScenarios().find((s) => s.id === id);
           if (!scenario) return;
@@ -3444,6 +3430,24 @@
             return;
           }
           openWatch(scenario);
+        });
+      });
+
+      grid.querySelectorAll(".thumb-timer-wrap").forEach((wrap) => {
+        const btn = wrap.querySelector(".thumb-timer");
+        if (!btn) return;
+        const closeTip = () => wrap.classList.remove("is-open");
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const willOpen = !wrap.classList.contains("is-open");
+          grid.querySelectorAll(".thumb-timer-wrap.is-open").forEach((w) => {
+            if (w !== wrap) w.classList.remove("is-open");
+          });
+          wrap.classList.toggle("is-open", willOpen);
+        });
+        btn.addEventListener("blur", () => {
+          setTimeout(closeTip, 120);
         });
       });
 
