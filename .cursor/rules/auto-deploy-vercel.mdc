@@ -1,0 +1,15 @@
+---
+description: Always ship local site changes to GitHub and Vercel production
+alwaysApply: true
+---
+
+# Deploy ifthink to Vercel
+
+After making user-facing or site code changes in this repo (especially `index.html`):
+
+1. Commit the relevant files (only when the change set is ready to ship, or when the user expects it live).
+2. `git push origin HEAD` to GitHub (`ByeongJaeGo/ifthink`).
+3. Ensure production is updated: GitHub integration usually redeploys, but if the live site may lag, run `npx vercel deploy --prod --yes`.
+4. Tell the user the live URL: https://ifthink.vercel.app
+
+Do not leave production on an old build after finishing a feature the user expects to see on the website.
