@@ -181,16 +181,35 @@
       padding: 1.5rem 1.25rem 3rem;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 220px;
-      gap: 1.5rem;
+      grid-template-areas:
+        "head ."
+        "grid side";
+      column-gap: 1.5rem;
+      row-gap: 0;
       align-items: start;
     }
 
+    .feed-head {
+      grid-area: head;
+    }
+
+    .page-layout > .grid {
+      grid-area: grid;
+    }
+
+    .page-layout > .empty {
+      grid-area: grid;
+      align-self: start;
+    }
+
     .side-rank {
+      grid-area: side;
       position: sticky;
       top: 4.5rem;
       display: flex;
       flex-direction: column;
       gap: 1.1rem;
+      margin-top: 0;
     }
 
     .side-rank-board {
@@ -257,6 +276,11 @@
     @media (max-width: 960px) {
       .page-layout {
         grid-template-columns: 1fr;
+        grid-template-areas:
+          "head"
+          "grid"
+          "side";
+        row-gap: 1.25rem;
       }
       .side-rank {
         position: static;
@@ -684,6 +708,33 @@
       color: var(--muted);
       border-color: var(--line);
       border-style: dashed;
+    }
+
+    .thumb-timer-wrap {
+      position: absolute;
+      top: 0.55rem;
+      right: 0.55rem;
+      z-index: 1;
+      max-width: 46%;
+      text-align: right;
+    }
+
+    .thumb-timer-wrap .thumb-timer {
+      position: static;
+      display: inline-block;
+    }
+
+    .thumb-timer-wrap hr {
+      border: none;
+      border-top: 1px solid rgba(26, 26, 26, 0.2);
+      margin: 0.35rem 0 0.3rem;
+    }
+
+    .thumb-timer-note {
+      font-size: 0.68rem;
+      line-height: 1.35;
+      color: var(--muted);
+      text-align: right;
     }
 
     .card.timed-card {
@@ -1214,15 +1265,15 @@
   </section>
 
   <div class="page-layout">
-    <main class="main">
+    <div class="feed-head">
       <p class="feed-title">만약에 챌린지 목록</p>
       <div class="sort-bar" role="tablist" aria-label="정렬">
         <button type="button" class="active" data-sort="rank">랭킹순</button>
         <button type="button" data-sort="latest">최신순</button>
       </div>
-      <div class="grid" id="grid"></div>
-      <p class="empty hidden" id="empty">아직 공개된 만약에가 없습니다.</p>
-    </main>
+    </div>
+    <div class="grid" id="grid"></div>
+    <p class="empty hidden" id="empty">아직 공개된 만약에가 없습니다.</p>
 
     <aside class="side-rank" id="sideRank" aria-label="닉네임 랭킹">
       <section class="side-rank-board">
@@ -2678,11 +2729,18 @@
           const expired = isTimedExpired(s);
           const remainMs = getExpiresAt(s) - Date.now();
           const timerHtml = timed
-            ? '<span class="thumb-timer' +
+            ? '<div class="thumb-timer-wrap">' +
+              '<span class="thumb-timer' +
               (expired ? " expired" : "") +
               '">' +
               (expired ? "종료" : formatRemain(remainMs)) +
-              "</span>"
+              "</span>" +
+              "<hr />" +
+              '<p class="thumb-timer-note">' +
+              (expired
+                ? "시간이 지나 참여할 수 없는 개시물입니다."
+                : "일정 시간이 지나면 참여할 수 없는 개시물입니다.") +
+              "</p></div>"
             : "";
           const timedClass =
             (timed ? " timed-card" : "") + (expired ? " timed-expired" : "");
