@@ -976,6 +976,30 @@
       padding: 1.5rem 0.5rem;
       text-align: center;
     }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 1.5rem;
+      transform: translateX(-50%) translateY(120%);
+      z-index: 10000;
+      max-width: min(92vw, 360px);
+      padding: 0.85rem 1.15rem;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 0.92rem;
+      line-height: 1.4;
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.28s ease, opacity 0.28s ease;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -1139,6 +1163,8 @@
       </section>
     </div>
   </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-auth-compat.js"></script>
@@ -1911,6 +1937,21 @@
 
     function openOverlay(el) { el.classList.remove("hidden"); }
     function closeOverlay(el) { el.classList.add("hidden"); }
+
+    let toastTimer = null;
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      if (!toast) {
+        alert(message);
+        return;
+      }
+      toast.textContent = message;
+      toast.classList.add("show");
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2800);
+    }
 
     document.querySelectorAll("[data-close]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -2727,6 +2768,7 @@
         openOverlay(myPostsOverlay);
         myPostsMsg.textContent = "수정했어요.";
         myPostsMsg.classList.add("ok");
+        showToast("작성글을 수정했어요.");
         return;
       }
 
@@ -2745,6 +2787,7 @@
       saveScenarios(list);
       closeOverlay(createOverlay);
       renderFeed();
+      showToast("만약에 개시물을 올렸어요!");
     });
 
     document.getElementById("logoLink").addEventListener("click", (e) => {
