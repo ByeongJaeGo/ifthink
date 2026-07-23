@@ -640,12 +640,29 @@
 
     .card-share {
       display: flex;
-      align-items: center;
-      gap: 0.35rem;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.3rem;
       width: 100%;
       max-width: 100%;
       cursor: default;
       z-index: 2;
+    }
+
+    .card-share-caption {
+      margin: 0;
+      font-size: 0.72rem;
+      line-height: 1.35;
+      text-align: center;
+      color: #1a5fb4;
+      font-weight: 600;
+    }
+
+    .card-share-row {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      width: 100%;
     }
 
     .card-share-input {
@@ -3388,11 +3405,13 @@
             escapeHtml(s.text) +
             "</span>" +
             '<div class="card-share">' +
+            '<p class="card-share-caption">내가 생성한 만약에 챌린지를 다른 사람과 즐겨보세요!</p>' +
+            '<div class="card-share-row">' +
             '<input class="card-share-input" type="text" readonly value="' +
             escapeHtml(shareLink) +
             '" aria-label="공유 링크" />' +
             '<button type="button" class="card-share-copy">복사</button>' +
-            "</div></div>" +
+            "</div></div></div>" +
             '<div class="card-meta"><p class="meta-row">' +
             rankHtml +
             '<span class="author">' +
