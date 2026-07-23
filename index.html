@@ -1275,6 +1275,7 @@
   <p class="notice promo">
     7월 한 달 동안 <strong>만약에 개시물</strong>을 올린 참여자 중 5분 추첨으로
     <strong>스타벅스 아메리카노 Tall 1잔</strong>을 드립니다.
+    <strong>많이 개시할수록 응모권이 증가</strong>합니다.
     오늘 챌린지에 참여하면 <strong>응모권 +1</strong>.
     매일 개시하면 꾸준한 개시자 칭호가 쌓입니다.
     <button type="button" class="promo-event-btn" id="eventApplyBtn">이벤트 응모하기</button>
@@ -3683,7 +3684,8 @@
       const streakInfo = bumpCreateStreakOnPost(user);
       updateUser(username, {
         createStreak: streakInfo.createStreak,
-        lastCreateDay: streakInfo.lastCreateDay
+        lastCreateDay: streakInfo.lastCreateDay,
+        eventTickets: (user.eventTickets || 0) + 1
       });
       closeOverlay(createOverlay);
       renderFeed();
@@ -3692,9 +3694,10 @@
       let toastMsg = wantTimed
         ? "24시간 타임어택 개시물을 올렸어요!"
         : "만약에 개시물을 올렸어요!";
+      toastMsg += " 응모권 +1";
       if (streakInfo.title) {
         toastMsg +=
-          " 꾸준한 개시자 「" +
+          " · 꾸준한 개시자 「" +
           streakInfo.title.label +
           "」 · 연속 " +
           streakInfo.createStreak +
