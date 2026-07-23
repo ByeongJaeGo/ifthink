@@ -6,13 +6,12 @@ service cloud.firestore {
     // ===============================================================
     //
     // Collection: eventEntries/{uid}
-    // - uid: string (must match auth.uid)
-    // - nickname: string (2-20 chars)
-    // - email: string (valid email)
-    // - createdAt: timestamp
-    // - updatedAt: timestamp
-    // - source: string ("starbucks_week")
-    // - scenarioId: string | null (optional)
+    // - uid, nickname, email, createdAt, updatedAt, source, scenarioId?
+    // - eventTickets?: number
+    //
+    // Collection: userNotifications/{uid}/items/{itemId}
+    // - toUid, fromUid, fromNick, type ("play"|"comment")
+    // - scenarioId, scenarioText, commentText?, read, createdAt, createdAtMs
     // ===============================================================
 
     function isSignedIn() {
@@ -32,7 +31,7 @@ service cloud.firestore {
 
     function isValidEventEntry() {
       let d = request.resource.data;
-      return d.keys().hasOnly(['uid', 'nickname', 'email', 'createdAt', 'updatedAt', 'source', 'scenarioId'])
+      return d.keys().hasOnly(['uid', 'nickname', 'email', 'createdAt', 'updatedAt', 'source', 'scenarioId', 'eventTickets'])
         && d.uid is string
         && d.uid == request.auth.uid
         && d.nickname is string
@@ -42,7 +41,35 @@ service cloud.firestore {
         && d.createdAt is timestamp
         && d.updatedAt is timestamp
         && d.source == 'starbucks_week'
-        && (d.scenarioId == null || (d.scenarioId is string && d.scenarioId.size() <= 80));
+        && (d.scenarioId == null || (d.scenarioId is string && d.scenarioId.size() <= 80))
+        && d.eventTickets is int
+        && d.eventTickets >= 0
+        && d.eventTickets <= 100000;
+    }
+
+    function isValidNotificationCreate(uid) {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'toUid', 'fromUid', 'fromNick', 'type',
+          'scenarioId', 'scenarioText', 'commentText',
+          'read', 'createdAt', 'createdAtMs'
+        ])
+        && d.toUid == uid
+        && d.fromUid == request.auth.uid
+        && d.fromUid != d.toUid
+        && d.fromNick is string
+        && d.fromNick.size() >= 1
+        && d.fromNick.size() <= 20
+        && (d.type == 'play' || d.type == 'comment')
+        && d.scenarioId is string
+        && d.scenarioId.size() >= 1
+        && d.scenarioId.size() <= 80
+        && d.scenarioText is string
+        && d.scenarioText.size() <= 120
+        && (d.commentText == null || (d.commentText is string && d.commentText.size() <= 200))
+        && d.read == false
+        && d.createdAt is timestamp
+        && d.createdAtMs is int;
     }
 
     match /eventEntries/{uid} {
@@ -53,6 +80,18 @@ service cloud.firestore {
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if false;
+    }
+
+    match /userNotifications/{uid}/items/{itemId} {
+      allow read: if isOwner(uid);
+      allow create: if isSignedIn() && isValidNotificationCreate(uid)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+        && request.resource.data.read is bool
+        && request.resource.data.toUid == resource.data.toUid
+        && request.resource.data.fromUid == resource.data.fromUid;
+      allow delete: if isOwner(uid);
     }
   }
 }

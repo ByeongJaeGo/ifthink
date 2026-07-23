@@ -82,6 +82,109 @@
       justify-content: flex-end;
     }
 
+    .notif-btn {
+      position: relative;
+    }
+
+    .notif-badge {
+      position: absolute;
+      top: -0.35rem;
+      right: -0.35rem;
+      min-width: 1.1rem;
+      height: 1.1rem;
+      padding: 0 0.28rem;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.65rem;
+      line-height: 1.1rem;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .notif-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      max-height: min(55vh, 420px);
+      overflow: auto;
+      margin: 0.75rem 0 0;
+    }
+
+    .notif-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 0.7rem 0.8rem;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+    }
+
+    .notif-item:hover {
+      border-color: var(--fg);
+    }
+
+    .notif-item.unread {
+      background: #fff8e8;
+      border-color: rgba(184, 134, 11, 0.35);
+    }
+
+    .notif-item .notif-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 0.55rem;
+      align-items: baseline;
+      margin-bottom: 0.25rem;
+    }
+
+    .notif-item .notif-who {
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .notif-item .notif-kind {
+      font-size: 0.75rem;
+      color: var(--accent);
+    }
+
+    .notif-item .notif-when {
+      margin-left: auto;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .notif-item .notif-body {
+      font-size: 0.84rem;
+      color: var(--fg);
+      line-height: 1.4;
+      margin: 0;
+    }
+
+    .notif-item .notif-target {
+      margin: 0.3rem 0 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .notif-empty {
+      font-size: 0.88rem;
+      color: var(--muted);
+      padding: 0.75rem 0;
+    }
+
+    .notif-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .notif-actions button {
+      flex: 1;
+    }
+
     .header-actions button,
     .modal button {
       font: inherit;
@@ -1266,6 +1369,10 @@
       <span class="title-badge hidden" id="titleBadge"></span>
       <span class="streak-chip hidden" id="streakChip"></span>
       <button type="button" id="myPostsBtn">내 작성글</button>
+      <button type="button" class="notif-btn hidden" id="notifBtn" aria-label="알림">
+        알림
+        <span class="notif-badge hidden" id="notifBadge">0</span>
+      </button>
       <button type="button" id="createBtn">만약에 상황 생성하기</button>
       <button type="button" class="primary" id="authBtn">로그인</button>
     </div>
@@ -1411,6 +1518,19 @@
     </div>
   </div>
 
+  <div class="overlay hidden" id="notifOverlay">
+    <div class="modal wide">
+      <button type="button" class="close-x" data-close="notifOverlay" aria-label="닫기">×</button>
+      <h2>알림</h2>
+      <p class="hint">내 개시물에 다른 사용자가 참여하거나 댓글을 남기면 여기에 표시됩니다.</p>
+      <div class="notif-list" id="notifList"></div>
+      <div class="notif-actions">
+        <button type="button" id="notifMarkAllBtn">모두 읽음</button>
+      </div>
+      <p class="msg" id="notifMsg"></p>
+    </div>
+  </div>
+
   <div class="overlay hidden" id="watchOverlay">
     <div class="modal watch-modal">
       <button type="button" class="close-x" data-close="watchOverlay" aria-label="닫기">×</button>
@@ -1483,7 +1603,10 @@
     const STORAGE_PROFILES = "ifthink_profiles_v1";
     const STORAGE_SCENARIOS = "ifthink_scenarios_v7";
     const STORAGE_COMMENTS = "ifthink_comments_v3";
+    const STORAGE_NOTIFS = "ifthink_notifs_v1";
     let currentAuthUser = null;
+    let cachedNotifications = [];
+    let notifUnsub = null;
 
     const SEED_COMMENTS = {
       "seed-ex-1": [
@@ -2247,16 +2370,248 @@
     function addComment(scenarioId, author, text) {
       const map = loadComments();
       if (!map[scenarioId]) map[scenarioId] = [];
-      map[scenarioId].push({
+      const comment = {
         id: "c-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
         author,
         text,
         createdAt: Date.now(),
         likes: 0,
         likedBy: []
-      });
+      };
+      map[scenarioId].push(comment);
       saveComments(map);
-      return getCommentsFor(scenarioId);
+      return { list: getCommentsFor(scenarioId), comment };
+    }
+
+    function loadLocalNotifs(uid) {
+      if (!uid) return [];
+      try {
+        const raw = JSON.parse(localStorage.getItem(STORAGE_NOTIFS) || "{}");
+        return Array.isArray(raw[uid]) ? raw[uid] : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    function saveLocalNotifs(uid, list) {
+      if (!uid) return;
+      try {
+        const raw = JSON.parse(localStorage.getItem(STORAGE_NOTIFS) || "{}");
+        raw[uid] = (list || []).slice(0, 80);
+        localStorage.setItem(STORAGE_NOTIFS, JSON.stringify(raw));
+      } catch (e) { /* ignore */ }
+    }
+    function mergeNotifLists(remote, local) {
+      const map = {};
+      (local || []).forEach((n) => {
+        if (n && n.id) map[n.id] = n;
+      });
+      (remote || []).forEach((n) => {
+        if (n && n.id) map[n.id] = n;
+      });
+      return Object.keys(map)
+        .map((id) => map[id])
+        .sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
+    }
+    function formatNotifWhen(ms) {
+      const t = Number(ms) || 0;
+      if (!t) return "";
+      const diff = Date.now() - t;
+      if (diff < 60 * 1000) return "방금";
+      if (diff < 60 * 60 * 1000) return Math.floor(diff / 60000) + "분 전";
+      if (diff < 24 * 60 * 60 * 1000) return Math.floor(diff / 3600000) + "시간 전";
+      return Math.floor(diff / 86400000) + "일 전";
+    }
+    async function notifyAuthor({ scenario, type, fromNick, commentText }) {
+      if (!scenario || !fromNick) return;
+      const toUid = scenario.authorUid;
+      const fromUid = currentAuthUser && currentAuthUser.uid;
+      if (!toUid || !fromUid) return;
+      if (toUid === fromUid) return;
+
+      const createdAtMs = Date.now();
+      const payload = {
+        toUid,
+        fromUid,
+        fromNick: String(fromNick).slice(0, 20),
+        type: type === "comment" ? "comment" : "play",
+        scenarioId: String(scenario.id || "").slice(0, 80),
+        scenarioText: String(scenario.text || "").slice(0, 120),
+        commentText:
+          type === "comment" ? String(commentText || "").slice(0, 200) : null,
+        read: false,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdAtMs
+      };
+
+      try {
+        await fbDb
+          .collection("userNotifications")
+          .doc(toUid)
+          .collection("items")
+          .add(payload);
+      } catch (err) {
+        // Firestore 실패 시 수신자 로컬 보관은 불가(다른 기기). 송신자 쪽 무시.
+        console.warn("notifyAuthor failed", err);
+      }
+    }
+    function updateNotifBadge() {
+      const badge = document.getElementById("notifBadge");
+      const btn = document.getElementById("notifBtn");
+      if (!btn || !badge) return;
+      if (!currentAuthUser) {
+        btn.classList.add("hidden");
+        return;
+      }
+      btn.classList.remove("hidden");
+      const unread = cachedNotifications.filter((n) => !n.read).length;
+      if (unread > 0) {
+        badge.textContent = unread > 99 ? "99+" : String(unread);
+        badge.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
+    }
+    function renderNotifList() {
+      const listEl = document.getElementById("notifList");
+      if (!listEl) return;
+      if (!cachedNotifications.length) {
+        listEl.innerHTML = '<p class="notif-empty">아직 알림이 없어요. 개시물에 참여·댓글이 달리면 여기 표시됩니다.</p>';
+        return;
+      }
+      listEl.innerHTML = cachedNotifications
+        .map((n) => {
+          const kind = n.type === "comment" ? "댓글" : "참여";
+          const body =
+            n.type === "comment"
+              ? escapeHtml(n.commentText || "")
+              : "내 만약에 챌린지에 참여했어요.";
+          return (
+            '<button type="button" class="notif-item' +
+            (n.read ? "" : " unread") +
+            '" data-id="' +
+            escapeHtml(n.id) +
+            '" data-scenario="' +
+            escapeHtml(n.scenarioId || "") +
+            '">' +
+            '<div class="notif-meta">' +
+            '<span class="notif-who">' +
+            escapeHtml(n.fromNick || "누군가") +
+            "</span>" +
+            '<span class="notif-kind">' +
+            kind +
+            "</span>" +
+            '<span class="notif-when">' +
+            escapeHtml(formatNotifWhen(n.createdAtMs)) +
+            "</span></div>" +
+            '<p class="notif-body">' +
+            body +
+            "</p>" +
+            '<p class="notif-target">「' +
+            escapeHtml(n.scenarioText || "개시물") +
+            "」</p>" +
+            "</button>"
+          );
+        })
+        .join("");
+
+      listEl.querySelectorAll(".notif-item").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-id");
+          const sid = btn.getAttribute("data-scenario");
+          await markNotificationRead(id);
+          closeOverlay(document.getElementById("notifOverlay"));
+          const scenario = loadScenarios().find((s) => s.id === sid);
+          if (scenario) openWatch(scenario);
+        });
+      });
+    }
+    async function markNotificationRead(id) {
+      if (!currentAuthUser || !id) return;
+      cachedNotifications = cachedNotifications.map((n) =>
+        n.id === id ? { ...n, read: true } : n
+      );
+      saveLocalNotifs(currentAuthUser.uid, cachedNotifications);
+      updateNotifBadge();
+      renderNotifList();
+      try {
+        await fbDb
+          .collection("userNotifications")
+          .doc(currentAuthUser.uid)
+          .collection("items")
+          .doc(id)
+          .update({ read: true });
+      } catch (e) { /* ignore */ }
+    }
+    async function markAllNotificationsRead() {
+      if (!currentAuthUser) return;
+      const unread = cachedNotifications.filter((n) => !n.read);
+      cachedNotifications = cachedNotifications.map((n) => ({ ...n, read: true }));
+      saveLocalNotifs(currentAuthUser.uid, cachedNotifications);
+      updateNotifBadge();
+      renderNotifList();
+      await Promise.all(
+        unread.map((n) =>
+          fbDb
+            .collection("userNotifications")
+            .doc(currentAuthUser.uid)
+            .collection("items")
+            .doc(n.id)
+            .update({ read: true })
+            .catch(() => null)
+        )
+      );
+    }
+    function stopNotifSubscription() {
+      if (notifUnsub) {
+        notifUnsub();
+        notifUnsub = null;
+      }
+    }
+    function startNotifSubscription() {
+      stopNotifSubscription();
+      cachedNotifications = [];
+      updateNotifBadge();
+      if (!currentAuthUser) return;
+
+      const uid = currentAuthUser.uid;
+      cachedNotifications = loadLocalNotifs(uid);
+      updateNotifBadge();
+
+      notifUnsub = fbDb
+        .collection("userNotifications")
+        .doc(uid)
+        .collection("items")
+        .orderBy("createdAtMs", "desc")
+        .limit(50)
+        .onSnapshot(
+          (snap) => {
+            const remote = snap.docs.map((doc) => {
+              const d = doc.data() || {};
+              return {
+                id: doc.id,
+                toUid: d.toUid,
+                fromUid: d.fromUid,
+                fromNick: d.fromNick,
+                type: d.type,
+                scenarioId: d.scenarioId,
+                scenarioText: d.scenarioText,
+                commentText: d.commentText,
+                read: !!d.read,
+                createdAtMs: d.createdAtMs || 0
+              };
+            });
+            cachedNotifications = mergeNotifLists(remote, loadLocalNotifs(uid));
+            saveLocalNotifs(uid, cachedNotifications);
+            updateNotifBadge();
+            const overlay = document.getElementById("notifOverlay");
+            if (overlay && !overlay.classList.contains("hidden")) renderNotifList();
+          },
+          (err) => {
+            console.warn("notif subscribe", err);
+            cachedNotifications = loadLocalNotifs(uid);
+            updateNotifBadge();
+          }
+        );
     }
     function toggleCommentLike(scenarioId, commentId, username) {
       if (!username) return { ok: false, reason: "login" };
@@ -2434,6 +2789,9 @@
     const authBtn = document.getElementById("authBtn");
     const createBtn = document.getElementById("createBtn");
     const myPostsBtn = document.getElementById("myPostsBtn");
+    const notifBtn = document.getElementById("notifBtn");
+    const notifOverlay = document.getElementById("notifOverlay");
+    const notifMarkAllBtn = document.getElementById("notifMarkAllBtn");
     const userChip = document.getElementById("userChip");
     const authOverlay = document.getElementById("authOverlay");
     const createOverlay = document.getElementById("createOverlay");
@@ -2626,7 +2984,7 @@
       });
     });
 
-    [authOverlay, createOverlay, watchOverlay, eventOverlay, eventDoneOverlay, myPostsOverlay].forEach((overlay) => {
+    [authOverlay, createOverlay, watchOverlay, eventOverlay, eventDoneOverlay, myPostsOverlay, notifOverlay].forEach((overlay) => {
       overlay.addEventListener("click", (e) => {
         if (e.target === overlay) closeOverlay(overlay);
       });
@@ -3131,6 +3489,11 @@
             ...streakPatch
           });
           refreshHeader();
+          notifyAuthor({
+            scenario: item,
+            type: "play",
+            fromNick: username
+          });
         } else {
           // already counted before; read current tallies
           item.wins = wins;
@@ -3262,6 +3625,12 @@
       commentInput.value = "";
       renderComments(currentWatch.id);
       renderFeed();
+      notifyAuthor({
+        scenario: currentWatch,
+        type: "comment",
+        fromNick: username,
+        commentText: text
+      });
     });
 
     authBtn.addEventListener("click", async () => {
@@ -3586,6 +3955,25 @@
       openOverlay(myPostsOverlay);
     });
 
+    if (notifBtn) {
+      notifBtn.addEventListener("click", () => {
+        if (!currentAuthUser) {
+          authMsg.textContent = "알림을 보려면 로그인해 주세요.";
+          openOverlay(authOverlay);
+          return;
+        }
+        const msg = document.getElementById("notifMsg");
+        if (msg) msg.textContent = "";
+        renderNotifList();
+        openOverlay(notifOverlay);
+      });
+    }
+    if (notifMarkAllBtn) {
+      notifMarkAllBtn.addEventListener("click", () => {
+        markAllNotificationsRead();
+      });
+    }
+
     createForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const username = getSession();
@@ -3748,6 +4136,7 @@
       currentAuthUser = user;
       if (user) ensureProfile(user);
       refreshHeader();
+      startNotifSubscription();
     });
 
     refreshHeader();
