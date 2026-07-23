@@ -812,7 +812,7 @@
 
     .option-item {
       display: grid;
-      grid-template-columns: 2.5rem 1fr;
+      grid-template-columns: 2.5rem 1fr auto;
       gap: 0.5rem;
       align-items: center;
       margin-bottom: 0.65rem;
@@ -826,6 +826,41 @@
 
     .option-item input {
       margin-bottom: 0 !important;
+    }
+
+    .option-item .opt-remove {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 0.25rem 0.4rem;
+      width: auto;
+      cursor: pointer;
+    }
+
+    .option-item .opt-remove:hover {
+      color: var(--danger);
+      border: none;
+    }
+
+    .option-item .opt-remove[disabled] {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .add-option-btn {
+      width: 100%;
+      margin: 0.25rem 0 0.85rem;
+      border: 1px dashed var(--line);
+      background: transparent;
+      color: var(--fg);
+      padding: 0.55rem 0.75rem;
+      cursor: pointer;
+    }
+
+    .add-option-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
     .option-list-title {
@@ -918,17 +953,18 @@
     <div class="modal wide">
       <button type="button" class="close-x" data-close="createOverlay" aria-label="닫기">×</button>
       <h2>토너먼트 개시</h2>
-      <p class="hint" id="createHint">질문 1개 + 답 8개를 쓰면, 사람들이 이상형 월드컵처럼 골라 나갑니다.</p>
+      <p class="hint" id="createHint">질문 1개 + 고를 상황을 2개 이상 쓰면, 사람들이 VS로 골라 나갑니다.</p>
       <form id="createForm">
         <label for="newScenario">질문 (만약에 상황)</label>
         <textarea id="newScenario" rows="2" maxlength="120" placeholder="예: 만약에 전 애인이 다시 만나자고 한다면?" required></textarea>
 
-        <p class="option-list-title">사람들이 고를 답 8개</p>
+        <p class="option-list-title">사람들이 고를 상황</p>
         <p class="option-guide">
-          여기에 적은 8개가 서로 VS로 붙습니다.<br />
-          예: 「바로 만난다」「읽씹한다」「거절한다」…
+          처음엔 2개만 두고, 필요할 때 <strong>+상황 추가하기</strong>로 늘리세요.<br />
+          최소 2개 · 최대 16개. 예: 「바로 만난다」「읽씹한다」…
         </p>
         <div class="option-list" id="optionInputs"></div>
+        <button type="button" class="add-option-btn" id="addOptionBtn">+상황 추가하기</button>
         <p class="msg" id="createMsg"></p>
         <button type="submit" class="primary" id="createSubmit">개시하기</button>
       </form>
@@ -939,7 +975,7 @@
     <div class="modal watch-modal">
       <button type="button" class="close-x" data-close="watchOverlay" aria-label="닫기">×</button>
       <p class="hint" id="watchAuthor"></p>
-      <p class="round-label" id="roundLabel">8강</p>
+      <p class="round-label" id="roundLabel">VS</p>
       <h2 class="watch-q" id="watchText"></h2>
       <div class="vs-wrap" id="vsWrap">
         <button type="button" class="pick" id="choiceA"></button>
@@ -1571,6 +1607,7 @@
       if (size === 8) return "8강";
       if (size === 4) return "4강";
       if (size === 2) return "결승";
+      if (size <= 1) return "우승";
       return size + "강";
     }
     function normalizeOptions(scenario) {
@@ -1606,6 +1643,107 @@
     const createHint = document.getElementById("createHint");
     const createSubmit = document.getElementById("createSubmit");
     const optionInputs = document.getElementById("optionInputs");
+    const addOptionBtn = document.getElementById("addOptionBtn");
+    const MIN_OPTIONS = 2;
+    const MAX_OPTIONS = 16;
+
+    const OPTION_EXAMPLES = [
+      "바로 만난다",
+      "읽씹하고 끝낸다",
+      "차갑게 거절한다",
+      "이유부터 따진다",
+      "친구로만 만나자고 한다",
+      "며칠 뒤에 답한다",
+      "복수하듯 튕긴다",
+      "울면서 다시 사귄다",
+      "그냥 무시한다",
+      "솔직하게 말한다",
+      "시간 두고 생각한다",
+      "주변에 물어본다",
+      "증거를 남긴다",
+      "바로 헤어진다",
+      "한 번 더 참는다",
+      "완전히 차단한다"
+    ];
+
+    function optionCount() {
+      return optionInputs.querySelectorAll(".option-item").length;
+    }
+
+    function renumberOptions() {
+      optionInputs.querySelectorAll(".option-item").forEach((row, i) => {
+        const num = row.querySelector(".num");
+        const inp = row.querySelector("input");
+        const removeBtn = row.querySelector(".opt-remove");
+        if (num) num.textContent = i + 1 + "번";
+        if (inp) {
+          inp.id = "opt" + (i + 1);
+          inp.setAttribute("aria-label", i + 1 + "번 상황");
+          if (!inp.value) {
+            inp.placeholder = "예: " + (OPTION_EXAMPLES[i] || "상황을 적어 주세요");
+          }
+        }
+        if (removeBtn) removeBtn.disabled = optionCount() <= MIN_OPTIONS;
+      });
+      if (addOptionBtn) {
+        addOptionBtn.disabled = optionCount() >= MAX_OPTIONS;
+        addOptionBtn.textContent =
+          optionCount() >= MAX_OPTIONS
+            ? "최대 " + MAX_OPTIONS + "개까지"
+            : "+상황 추가하기";
+      }
+    }
+
+    function addOptionRow(prefill) {
+      if (optionCount() >= MAX_OPTIONS) return;
+      const i = optionCount();
+      const row = document.createElement("div");
+      row.className = "option-item";
+
+      const num = document.createElement("span");
+      num.className = "num";
+      num.textContent = i + 1 + "번";
+
+      const inp = document.createElement("input");
+      inp.id = "opt" + (i + 1);
+      inp.maxLength = 40;
+      inp.required = true;
+      inp.placeholder = "예: " + (OPTION_EXAMPLES[i] || "상황을 적어 주세요");
+      inp.setAttribute("aria-label", i + 1 + "번 상황");
+      if (prefill) inp.value = prefill;
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "opt-remove";
+      removeBtn.setAttribute("aria-label", "상황 삭제");
+      removeBtn.textContent = "삭제";
+      removeBtn.addEventListener("click", () => {
+        if (optionCount() <= MIN_OPTIONS) return;
+        row.remove();
+        renumberOptions();
+      });
+
+      row.appendChild(num);
+      row.appendChild(inp);
+      row.appendChild(removeBtn);
+      optionInputs.appendChild(row);
+      renumberOptions();
+      inp.focus();
+    }
+
+    function resetOptionInputs() {
+      optionInputs.innerHTML = "";
+      addOptionRow();
+      addOptionRow();
+      const first = optionInputs.querySelector("input");
+      if (first) first.blur();
+    }
+
+    resetOptionInputs();
+    if (addOptionBtn) {
+      addOptionBtn.addEventListener("click", () => addOptionRow());
+    }
+
     const watchText = document.getElementById("watchText");
     const watchAuthor = document.getElementById("watchAuthor");
     const roundLabel = document.getElementById("roundLabel");
@@ -1638,37 +1776,6 @@
     let nextWinners = [];
     let matchIndex = 0;
     let tournamentDone = false;
-
-    const OPTION_EXAMPLES = [
-      "바로 만난다",
-      "읽씹하고 끝낸다",
-      "차갑게 거절한다",
-      "이유부터 따진다",
-      "친구로만 만나자고 한다",
-      "며칠 뒤에 답한다",
-      "복수하듯 튕긴다",
-      "울면서 다시 사귄다"
-    ];
-
-    for (let i = 1; i <= 8; i++) {
-      const row = document.createElement("div");
-      row.className = "option-item";
-
-      const num = document.createElement("span");
-      num.className = "num";
-      num.textContent = i + "번";
-
-      const inp = document.createElement("input");
-      inp.id = "opt" + i;
-      inp.maxLength = 40;
-      inp.required = true;
-      inp.placeholder = "예: " + OPTION_EXAMPLES[i - 1];
-      inp.setAttribute("aria-label", i + "번 답");
-
-      row.appendChild(num);
-      row.appendChild(inp);
-      optionInputs.appendChild(row);
-    }
 
     function openOverlay(el) { el.classList.remove("hidden"); }
     function closeOverlay(el) { el.classList.add("hidden"); }
@@ -1807,7 +1914,7 @@
             "</span>" +
             '<span class="badge">' +
             n +
-            "강 토너먼트</span>" +
+            "개 토너먼트</span>" +
             "</p>" +
             previewHtml +
             "</div></article>"
@@ -1845,9 +1952,29 @@
         bracket = nextWinners.slice();
         nextWinners = [];
         matchIndex = 0;
+        if (bracket.length === 1) {
+          finishTournament(bracket[0]);
+          return;
+        }
+        if (bracket.length % 2 === 1) {
+          nextWinners.push(bracket.pop());
+        }
       }
 
-      roundLabel.textContent = roundName(bracket.length);
+      if (!bracket[matchIndex + 1]) {
+        if (nextWinners.length === 1 && bracket.length === 0) {
+          finishTournament(nextWinners[0]);
+          return;
+        }
+        if (bracket[matchIndex] && !bracket[matchIndex + 1]) {
+          nextWinners.push(bracket[matchIndex]);
+          matchIndex += 1;
+          showMatch();
+          return;
+        }
+      }
+
+      roundLabel.textContent = roundName(bracket.length + nextWinners.length);
       const left = bracket[matchIndex];
       const right = bracket[matchIndex + 1];
       choiceA.textContent = left;
@@ -1894,10 +2021,11 @@
       currentWatch = scenario;
       tournamentDone = false;
       bracket = shuffle(opts);
-      // ensure even count by dropping last if odd
-      if (bracket.length % 2 === 1) bracket.pop();
       nextWinners = [];
       matchIndex = 0;
+      if (bracket.length % 2 === 1) {
+        nextWinners.push(bracket.pop());
+      }
 
       watchText.textContent = scenario.text;
       watchAuthor.textContent = scenario.author + " · 토너먼트";
@@ -2243,7 +2371,8 @@
       const user = getUser(username);
       const left = Math.max(0, 1 - (user.participations || 0));
       createMsg.textContent = "";
-      createForm.reset();
+      document.getElementById("newScenario").value = "";
+      resetOptionInputs();
       if (left > 0) {
         createHint.textContent =
           "아직 1번 더 참여해야 개시할 수 있습니다. (현재 " +
@@ -2251,7 +2380,7 @@
           "/1)";
         createSubmit.disabled = true;
       } else {
-        createHint.textContent = "질문 1개 + 답 8개를 쓰면, 사람들이 이상형 월드컵처럼 골라 나갑니다.";
+        createHint.textContent = "질문 1개 + 상황 2개 이상이면 개시할 수 있어요. +상황 추가하기로 늘리세요.";
         createSubmit.disabled = false;
       }
       openOverlay(createOverlay);
@@ -2268,13 +2397,25 @@
 
       const text = document.getElementById("newScenario").value.trim();
       const options = [];
-      for (let i = 1; i <= 8; i++) {
-        const v = document.getElementById("opt" + i).value.trim();
+      optionInputs.querySelectorAll("input").forEach((inp) => {
+        const v = inp.value.trim();
         if (v) options.push(v);
-      }
+      });
 
-      if (!text || options.length !== 8) {
-        createMsg.textContent = "질문과 답 8개를 모두 적어 주세요.";
+      if (!text) {
+        createMsg.textContent = "질문을 적어 주세요.";
+        return;
+      }
+      if (options.length < MIN_OPTIONS) {
+        createMsg.textContent = "상황은 최소 " + MIN_OPTIONS + "개 필요해요.";
+        return;
+      }
+      if (options.length > MAX_OPTIONS) {
+        createMsg.textContent = "상황은 최대 " + MAX_OPTIONS + "개까지예요.";
+        return;
+      }
+      if (optionInputs.querySelectorAll("input").length !== options.length) {
+        createMsg.textContent = "비어 있는 상황 칸을 채우거나 삭제해 주세요.";
         return;
       }
 
