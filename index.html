@@ -1123,6 +1123,56 @@
       border-bottom-color: var(--accent);
     }
 
+    .email-suggest-wrap {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .email-suggest-wrap input {
+      margin-bottom: 0;
+    }
+
+    .email-suggest {
+      list-style: none;
+      margin: 0.15rem 0 0;
+      padding: 0;
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      z-index: 30;
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      max-height: 9rem;
+      overflow: auto;
+    }
+
+    .email-suggest.hidden {
+      display: none !important;
+    }
+
+    .email-suggest li {
+      padding: 0.55rem 0.7rem;
+      font-size: 0.92rem;
+      cursor: pointer;
+      color: var(--fg);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .email-suggest li:last-child {
+      border-bottom: none;
+    }
+
+    .email-suggest li:hover,
+    .email-suggest li.is-active {
+      background: #f5f5f5;
+    }
+
+    .email-suggest li strong {
+      font-weight: 600;
+    }
+
     .modal .msg {
       color: var(--danger);
       font-size: 0.85rem;
@@ -3069,6 +3119,113 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
     }
+
+    const EMAIL_SUGGEST_DOMAINS = ["gmail.com", "naver.com"];
+    function bindEmailAutocomplete(input) {
+      if (!input || input.dataset.emailSuggestBound === "1") return;
+      input.dataset.emailSuggestBound = "1";
+
+      const wrap = document.createElement("div");
+      wrap.className = "email-suggest-wrap";
+      input.parentNode.insertBefore(wrap, input);
+      wrap.appendChild(input);
+
+      const box = document.createElement("ul");
+      box.className = "email-suggest hidden";
+      box.setAttribute("role", "listbox");
+      wrap.appendChild(box);
+
+      let activeIdx = -1;
+
+      function hide() {
+        box.classList.add("hidden");
+        box.innerHTML = "";
+        activeIdx = -1;
+      }
+
+      function pick(email) {
+        input.value = email;
+        hide();
+        input.focus();
+      }
+
+      function render() {
+        const raw = String(input.value || "");
+        const v = raw.replace(/\s/g, "");
+        if (!v) {
+          hide();
+          return;
+        }
+        const at = v.indexOf("@");
+        const local = at >= 0 ? v.slice(0, at) : v;
+        if (!local) {
+          hide();
+          return;
+        }
+        const typedDomain = at >= 0 ? v.slice(at + 1).toLowerCase() : "";
+        if (at >= 0 && EMAIL_SUGGEST_DOMAINS.includes(typedDomain)) {
+          hide();
+          return;
+        }
+        const domains = EMAIL_SUGGEST_DOMAINS.filter(
+          (d) => !typedDomain || d.startsWith(typedDomain)
+        );
+        if (!domains.length) {
+          hide();
+          return;
+        }
+        box.innerHTML = domains
+          .map((d) => {
+            const email = local + "@" + d;
+            return (
+              '<li role="option" data-email="' +
+              escapeHtml(email) +
+              '"><strong>' +
+              escapeHtml(local) +
+              "</strong>@" +
+              escapeHtml(d) +
+              "</li>"
+            );
+          })
+          .join("");
+        box.classList.remove("hidden");
+        activeIdx = -1;
+        box.querySelectorAll("li").forEach((li) => {
+          li.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            pick(li.getAttribute("data-email") || "");
+          });
+        });
+      }
+
+      function setActive(next) {
+        const items = [...box.querySelectorAll("li")];
+        if (!items.length) return;
+        activeIdx = (next + items.length) % items.length;
+        items.forEach((li, i) => li.classList.toggle("is-active", i === activeIdx));
+      }
+
+      input.addEventListener("input", render);
+      input.addEventListener("focus", render);
+      input.addEventListener("blur", () => setTimeout(hide, 120));
+      input.addEventListener("keydown", (e) => {
+        if (box.classList.contains("hidden")) return;
+        const items = box.querySelectorAll("li");
+        if (!items.length) return;
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setActive(activeIdx + 1);
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setActive(activeIdx <= 0 ? items.length - 1 : activeIdx - 1);
+        } else if (e.key === "Enter" && activeIdx >= 0) {
+          e.preventDefault();
+          pick(items[activeIdx].getAttribute("data-email") || "");
+        } else if (e.key === "Escape") {
+          hide();
+        }
+      });
+    }
     function shuffle(arr) {
       const a = arr.slice();
       for (let i = a.length - 1; i > 0; i--) {
@@ -3130,6 +3287,8 @@
     const eventMsg = document.getElementById("eventMsg");
     const eventNickname = document.getElementById("eventNickname");
     const eventEmail = document.getElementById("eventEmail");
+    bindEmailAutocomplete(authEmailInput);
+    bindEmailAutocomplete(eventEmail);
     const eventDoneText = document.getElementById("eventDoneText");
     const createForm = document.getElementById("createForm");
     const createMsg = document.getElementById("createMsg");
