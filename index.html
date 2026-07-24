@@ -2111,6 +2111,123 @@
         if (!mine) return false;
         return kstDayKey(s.createdAt || 0) === today;
       });
+      }
+    ];
+
+    const JUNGBARAM_SEED = {
+      id: "seed-jungbaram-ggol",
+      text:
+        "만약 증바람 끝날때 어떤 채팅 쳐야 꼴받을까?\n댓글로 추천좀 해주세요. 적이 화나서 씩씩거리는 모습 상상하고 싶어요.",
+      options: [
+        "이기고자",
+        "진짜 못하시네요. 특히00님",
+        "그렇게 못하면 빨리 서렌좀. 시간아까움.",
+        "어, 이거 봇전중이라서 빨리 끝낼게."
+      ],
+      wins: {
+        "이기고자": 22,
+        "진짜 못하시네요. 특히00님": 28,
+        "그렇게 못하면 빨리 서렌좀. 시간아까움.": 26,
+        "어, 이거 봇전중이라서 빨리 끝낼게.": 20
+      },
+      author: "민트맛팝콘",
+      plays: 96,
+      createdAt: 0
+    };
+
+    const JUNGBARAM_COMMENTS = [
+      {
+        id: "jung-c1",
+        author: "랭크드롭",
+        text: "서렌 재촉이 제일 화나더라… 시간아까움 한 마디에 멘탈 나감",
+        likes: 41,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 20
+      },
+      {
+        id: "jung-c2",
+        author: "봇전탐정",
+        text: "봇전중이라서 빨리 끝낼게… 이거 진짜 혈압 오름ㅋㅋ",
+        likes: 37,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 48
+      },
+      {
+        id: "jung-c3",
+        author: "채팅장인",
+        text: "특히00님 포인트 찍는 거 국룰임. 이름 넣으면 더 꼴받음",
+        likes: 33,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 75
+      },
+      {
+        id: "jung-c4",
+        author: "씩씩거림",
+        text: "이기고자 한 글자가 제일 가벼운데 제일 거슬림",
+        likes: 29,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 110
+      }
+    ];
+
+    function ensureJungbaramSeed(list) {
+      const idx = list.findIndex((s) => s.id === JUNGBARAM_SEED.id);
+      const now = Date.now();
+      if (idx < 0) {
+        list.push({
+          ...JUNGBARAM_SEED,
+          options: JUNGBARAM_SEED.options.slice(),
+          wins: { ...JUNGBARAM_SEED.wins },
+          createdAt: now - 1000 * 60 * 40
+        });
+        return { list, changed: true };
+      }
+      const cur = list[idx];
+      const next = {
+        ...cur,
+        text: JUNGBARAM_SEED.text,
+        options: JUNGBARAM_SEED.options.slice(),
+        wins: { ...JUNGBARAM_SEED.wins },
+        author: JUNGBARAM_SEED.author,
+        plays: JUNGBARAM_SEED.plays
+      };
+      const same =
+        cur.text === next.text &&
+        cur.author === next.author &&
+        (cur.plays || 0) === next.plays &&
+        JSON.stringify(cur.options) === JSON.stringify(next.options);
+      if (!same) {
+        list[idx] = next;
+        return { list, changed: true };
+      }
+      return { list, changed: false };
+    }
+
+    function ensureJungbaramComments(map) {
+      const existing = Array.isArray(map[JUNGBARAM_SEED.id])
+        ? map[JUNGBARAM_SEED.id].slice()
+        : [];
+      const withoutSeed = existing.filter(
+        (c) => !String(c.id || "").startsWith("jung-c")
+      );
+      const merged = withoutSeed.concat(
+        JUNGBARAM_COMMENTS.map((c) => ({ ...c }))
+      );
+      const before = JSON.stringify(
+        existing
+          .filter((c) => String(c.id || "").startsWith("jung-c"))
+          .map((c) => [c.id, c.text, c.likes])
+      );
+      const after = JSON.stringify(
+        JUNGBARAM_COMMENTS.map((c) => [c.id, c.text, c.likes])
+      );
+      if (before === after && existing.length === merged.length) {
+        return { map, changed: false };
+      }
+      return {
+        map: { ...map, [JUNGBARAM_SEED.id]: merged },
+        changed: true
+      };
     }
 
     const TIMED_FAMILY_SEED = {
@@ -2244,11 +2361,18 @@
             changed = true;
             return { ...s, plays: 105 };
           }
+          if (s.id === JUNGBARAM_SEED.id && (s.plays || 0) !== JUNGBARAM_SEED.plays) {
+            changed = true;
+            return { ...s, plays: JUNGBARAM_SEED.plays };
+          }
           return s;
         });
         const timedEnsured = ensureTimedFamilySeed(list);
         list = timedEnsured.list;
         if (timedEnsured.changed) changed = true;
+        const jungEnsured = ensureJungbaramSeed(list);
+        list = jungEnsured.list;
+        if (jungEnsured.changed) changed = true;
         if (changed || !raw) {
           localStorage.setItem(STORAGE_SCENARIOS, JSON.stringify(list));
         }
@@ -2388,7 +2512,9 @@
         map = normalizeCommentsMap(ensured.map);
         const timedComments = ensureTimedFamilyComments(map);
         map = normalizeCommentsMap(timedComments.map);
-        if (!raw || ensured.changed || timedComments.changed) {
+        const jungComments = ensureJungbaramComments(map);
+        map = normalizeCommentsMap(jungComments.map);
+        if (!raw || ensured.changed || timedComments.changed || jungComments.changed) {
           localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(map));
         }
         return map;
