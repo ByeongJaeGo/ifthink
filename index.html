@@ -1647,6 +1647,96 @@
       color: var(--fg);
       text-align: center;
     }
+
+    .challenge-view {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1.25rem 1.1rem 3.5rem;
+    }
+
+    .challenge-view.hidden {
+      display: none !important;
+    }
+
+    #homeView.hidden {
+      display: none !important;
+    }
+
+    .challenge-back {
+      font: inherit;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--fg);
+      padding: 0.4rem 0.75rem;
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+    }
+
+    .challenge-back:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .challenge-meta {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin: 0 0 0.55rem;
+      line-height: 1.5;
+    }
+
+    .challenge-title {
+      font-size: clamp(1.25rem, 3.5vw, 1.7rem);
+      font-weight: 600;
+      line-height: 1.4;
+      margin: 0 0 1rem;
+      white-space: pre-wrap;
+      word-break: keep-all;
+    }
+
+    .challenge-share {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+      margin-bottom: 1.35rem;
+    }
+
+    .challenge-options-block h2 {
+      font-size: 1rem;
+      margin: 0 0 0.65rem;
+    }
+
+    .challenge-options {
+      margin: 0 0 1.25rem;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .challenge-options li {
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 0.75rem 0.9rem;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .challenge-play {
+      width: 100%;
+      margin-bottom: 0.45rem;
+    }
+
+    .challenge-play-hint {
+      margin: 0 0 1.75rem;
+      min-height: 1.2em;
+    }
+
+    .challenge-view .comments {
+      border-top: 1px solid var(--line);
+      padding-top: 1.25rem;
+    }
   </style>
 </head>
 <body>
@@ -1671,6 +1761,7 @@
     </div>
   </header>
 
+  <div id="homeView">
   <p class="notice">로그인하고 <strong>참여 1번</strong> 하면 만약에 상황을 개시할 수 있습니다.</p>
   <p class="notice promo">
     7월 한 달 동안 <strong>만약에 개시물</strong>을 올린 참여자 중 5분 추첨으로
@@ -1682,7 +1773,7 @@
 
   <div class="share-landing hidden" id="shareLanding">
     <p id="shareLandingText"></p>
-    <button type="button" id="shareLandingBtn">나도 이 챌린지 하기</button>
+    <button type="button" id="shareLandingBtn">챌린지 상세 보기</button>
   </div>
 
   <section class="seo-intro" aria-label="서비스 소개">
@@ -1718,6 +1809,41 @@
         <ol class="side-rank-list" id="rankTopAuthors"></ol>
       </section>
     </aside>
+  </div>
+  </div>
+
+  <div id="challengeView" class="challenge-view hidden">
+    <div class="challenge-inner">
+      <button type="button" class="challenge-back" id="challengeBackBtn">← 목록으로</button>
+      <p class="challenge-meta" id="challengeMeta"></p>
+      <h1 class="challenge-title" id="challengeTitle"></h1>
+      <div class="challenge-share">
+        <input id="challengeLinkInput" class="card-share-input" type="text" readonly aria-label="공유 링크" />
+        <button type="button" class="card-share-copy" id="challengeCopyBtn">복사</button>
+      </div>
+      <section class="challenge-options-block" aria-label="조건">
+        <h2>조건</h2>
+        <ol class="challenge-options" id="challengeOptions"></ol>
+      </section>
+      <button type="button" class="primary challenge-play" id="challengePlayBtn">챌린지 시작하기</button>
+      <p class="hint challenge-play-hint" id="challengePlayHint"></p>
+
+      <section class="comments" id="commentsSection" aria-label="댓글">
+        <div class="comments-head">
+          <strong>댓글</strong>
+          <span class="count" id="commentCount">0개</span>
+        </div>
+        <div class="comment-list" id="commentList"></div>
+        <form class="comment-form" id="commentForm">
+          <label for="commentInput" class="share-label">의견 남기기</label>
+          <textarea id="commentInput" rows="2" maxlength="200" placeholder="이 만약에, 나는 이렇게 생각해요" required></textarea>
+          <p class="msg" id="commentMsg"></p>
+          <div class="row">
+            <button type="submit" class="primary">댓글 달기</button>
+          </div>
+        </form>
+      </section>
+    </div>
   </div>
 
   <div class="overlay hidden" id="authOverlay">
@@ -1867,22 +1993,6 @@
         </div>
         <p class="share-copied" id="shareCopied"></p>
       </div>
-
-      <section class="comments" id="commentsSection" aria-label="댓글">
-        <div class="comments-head">
-          <strong>댓글</strong>
-          <span class="count" id="commentCount">0개</span>
-        </div>
-        <div class="comment-list" id="commentList"></div>
-        <form class="comment-form" id="commentForm">
-          <label for="commentInput" class="share-label">의견 남기기</label>
-          <textarea id="commentInput" rows="2" maxlength="200" placeholder="이 만약에, 나는 이렇게 생각해요" required></textarea>
-          <p class="msg" id="commentMsg"></p>
-          <div class="row">
-            <button type="submit" class="primary">댓글 달기</button>
-          </div>
-        </form>
-      </section>
     </div>
   </div>
 
@@ -2969,7 +3079,7 @@
           await markNotificationRead(id);
           closeOverlay(document.getElementById("notifOverlay"));
           const scenario = loadScenarios().find((s) => s.id === sid);
-          if (scenario) openWatch(scenario);
+          if (scenario) openChallengePage(scenario, true);
         });
       });
     }
@@ -3549,6 +3659,17 @@
     let sortMode = "rank";
     let currentWatch = null;
     let pendingShareScenarioId = null;
+    let currentChallengeId = null;
+    const homeView = document.getElementById("homeView");
+    const challengeView = document.getElementById("challengeView");
+    const challengeBackBtn = document.getElementById("challengeBackBtn");
+    const challengeMeta = document.getElementById("challengeMeta");
+    const challengeTitle = document.getElementById("challengeTitle");
+    const challengeOptions = document.getElementById("challengeOptions");
+    const challengePlayBtn = document.getElementById("challengePlayBtn");
+    const challengePlayHint = document.getElementById("challengePlayHint");
+    const challengeLinkInput = document.getElementById("challengeLinkInput");
+    const challengeCopyBtn = document.getElementById("challengeCopyBtn");
     let editingScenarioId = null;
     let bracket = [];
     let nextWinners = [];
@@ -3913,11 +4034,7 @@
           const id = card.getAttribute("data-id");
           const scenario = loadScenarios().find((s) => s.id === id);
           if (!scenario) return;
-          if (isTimedExpired(scenario)) {
-            showToast("이 타임어택은 24시간이 지나 종료됐어요.");
-            return;
-          }
-          openWatch(scenario);
+          openChallengePage(scenario, true);
         });
       });
 
@@ -4053,6 +4170,85 @@
       bindCommentLikeButtons(commentList);
     }
 
+    function showHomeView(pushHistory) {
+      currentChallengeId = null;
+      if (homeView) homeView.classList.remove("hidden");
+      if (challengeView) challengeView.classList.add("hidden");
+      if (pushHistory) {
+        history.pushState({ view: "home" }, "", "/");
+      }
+    }
+
+    function renderChallengePage(scenario) {
+      if (!scenario || !challengeView) return;
+      currentChallengeId = scenario.id;
+      const opts = normalizeOptions(scenario);
+      const commentsLen = getCommentsFor(scenario.id).length;
+      const timed = isTimedScenario(scenario);
+      const expired = isTimedExpired(scenario);
+
+      if (challengeTitle) challengeTitle.textContent = scenario.text || "";
+      if (challengeMeta) {
+        challengeMeta.textContent =
+          (scenario.author || "익명") +
+          " · 개시 " +
+          formatPostDateTime(scenario.createdAt) +
+          " · 참여 " +
+          (scenario.plays || 0) +
+          " · 댓글 " +
+          commentsLen +
+          (timed ? " · 타임어택" : "");
+      }
+      if (challengeOptions) {
+        challengeOptions.innerHTML = opts
+          .map((o, i) => "<li><strong>" + (i + 1) + ".</strong> " + escapeHtml(o) + "</li>")
+          .join("");
+      }
+      if (challengeLinkInput) challengeLinkInput.value = buildChallengeUrl(scenario.id);
+      if (challengePlayBtn) {
+        challengePlayBtn.disabled = expired || opts.length < 2;
+        challengePlayBtn.textContent = expired
+          ? "종료된 타임어택"
+          : "챌린지 시작하기";
+      }
+      if (challengePlayHint) {
+        challengePlayHint.textContent = expired
+          ? "시간이 지나 참여할 수 없는 개시물입니다. 조건과 댓글은 볼 수 있어요."
+          : "조건을 확인한 뒤 토너먼트로 골라 보세요.";
+      }
+      renderComments(scenario.id);
+    }
+
+    function openChallengePage(scenarioOrId, pushHistory) {
+      const id =
+        typeof scenarioOrId === "string"
+          ? scenarioOrId
+          : scenarioOrId && scenarioOrId.id;
+      const scenario =
+        typeof scenarioOrId === "object" && scenarioOrId && scenarioOrId.id
+          ? scenarioOrId
+          : loadScenarios().find((s) => s.id === id);
+      if (!scenario) {
+        showToast("개시글을 찾을 수 없어요.");
+        showHomeView(false);
+        return;
+      }
+      renderChallengePage(scenario);
+      if (homeView) homeView.classList.add("hidden");
+      if (challengeView) challengeView.classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (pushHistory !== false) {
+        const url = buildChallengeUrl(scenario.id);
+        history.pushState({ view: "challenge", id: scenario.id }, "", url);
+      } else {
+        history.replaceState(
+          { view: "challenge", id: scenario.id },
+          "",
+          buildChallengeUrl(scenario.id)
+        );
+      }
+    }
+
     function openWatch(scenario) {
       const opts = normalizeOptions(scenario);
       if (opts.length < 2) return;
@@ -4080,9 +4276,6 @@
         '<span class="watch-posted-at">개시 ' +
         escapeHtml(formatPostDateTime(scenario.createdAt)) +
         "</span>";
-      commentMsg.textContent = "";
-      commentInput.value = "";
-      renderComments(scenario.id);
       showMatch();
       openOverlay(watchOverlay);
     }
@@ -4239,6 +4432,10 @@
 
       refreshHeader();
       renderFeed();
+      if (currentChallengeId === currentWatch.id) {
+        const latest = loadScenarios().find((s) => s.id === currentWatch.id);
+        if (latest) renderChallengePage(latest);
+      }
     }
 
     copyShareBtn.addEventListener("click", async () => {
@@ -4275,7 +4472,8 @@
       e.preventDefault();
       commentMsg.textContent = "";
 
-      if (!currentWatch) return;
+      const scenarioId = currentChallengeId || (currentWatch && currentWatch.id);
+      if (!scenarioId) return;
 
       const username = getSession();
       if (!username || !getUser(username)) {
@@ -4295,12 +4493,16 @@
         return;
       }
 
-      addComment(currentWatch.id, username, text);
+      const scenario = loadScenarios().find((s) => s.id === scenarioId);
+      addComment(scenarioId, username, text);
       commentInput.value = "";
-      renderComments(currentWatch.id);
+      renderComments(scenarioId);
       renderFeed();
+      if (scenario && currentChallengeId === scenarioId) {
+        renderChallengePage(scenario);
+      }
       notifyAuthor({
-        scenario: currentWatch,
+        scenario: scenario || currentWatch,
         type: "comment",
         fromNick: username,
         commentText: text
@@ -4823,7 +5025,7 @@
               const scenario = loadScenarios().find((s) => s.id === id);
               if (scenario) {
                 closeOverlay(myPostsOverlay);
-                openWatch(scenario);
+                openChallengePage(scenario, true);
               }
             }
           });
@@ -4977,8 +5179,34 @@
 
     document.getElementById("logoLink").addEventListener("click", (e) => {
       e.preventDefault();
+      showHomeView(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
+
+    if (challengeBackBtn) {
+      challengeBackBtn.addEventListener("click", () => showHomeView(true));
+    }
+    if (challengePlayBtn) {
+      challengePlayBtn.addEventListener("click", () => {
+        const scenario = loadScenarios().find((s) => s.id === currentChallengeId);
+        if (!scenario) return;
+        openWatch(scenario);
+      });
+    }
+    if (challengeCopyBtn && challengeLinkInput) {
+      challengeCopyBtn.addEventListener("click", async () => {
+        try {
+          challengeLinkInput.focus();
+          challengeLinkInput.select();
+          await copyText(challengeLinkInput.value || "");
+          showToast("공유 링크가 복사됐어요!");
+        } catch (err) {
+          showToast("복사에 실패했어요. 링크를 드래그해 복사해 주세요.");
+        }
+      });
+      challengeLinkInput.addEventListener("focus", () => challengeLinkInput.select());
+      challengeLinkInput.addEventListener("click", () => challengeLinkInput.select());
+    }
 
     function handleIncomingShare() {
       const params = new URLSearchParams(location.search);
@@ -4993,21 +5221,30 @@
       const tone = params.get("t") === "popular" ? "대중적" : "남과 다름";
 
       pendingShareScenarioId = id;
-      shareLandingText.innerHTML = winner
-        ? "친구가 <strong>「" +
-          escapeHtml(winner) +
-          "」</strong>를 골랐어요" +
-          (percent ? " · 같은 선택 " + escapeHtml(percent) + "% (" + tone + ")" : "") +
-          "<br />너도 같은 만약에 챌린지를 해보세요."
-        : "친구가 공유한 만약에 챌린지예요. 너도 해보세요.";
-      shareLanding.classList.remove("hidden");
+      openChallengePage(scenario, false);
+      if (winner) {
+        showToast(
+          "친구가 「" +
+            winner +
+            "」를 골랐어요" +
+            (percent ? " · 같은 선택 " + percent + "% (" + tone + ")" : "")
+        );
+      }
     }
 
-    shareLandingBtn.addEventListener("click", () => {
-      shareLanding.classList.add("hidden");
-      const id = pendingShareScenarioId;
-      const scenario = loadScenarios().find((s) => s.id === id);
-      if (scenario) openWatch(scenario);
+    if (shareLandingBtn) {
+      shareLandingBtn.addEventListener("click", () => {
+        shareLanding.classList.add("hidden");
+        const id = pendingShareScenarioId;
+        const scenario = loadScenarios().find((s) => s.id === id);
+        if (scenario) openChallengePage(scenario, true);
+      });
+    }
+
+    window.addEventListener("popstate", () => {
+      const id = new URLSearchParams(location.search).get("s");
+      if (id) openChallengePage(id, false);
+      else showHomeView(false);
     });
 
     fbAuth.onAuthStateChanged((user) => {
