@@ -1447,9 +1447,34 @@
       opacity: 1;
     }
 
-    #eventDoneCloseBtn {
+    #eventDoneCloseBtn,
+    #createDoneCloseBtn {
       width: 100%;
       margin-top: 0.5rem;
+    }
+
+    .create-done-modal h2 {
+      margin-bottom: 0.65rem;
+    }
+
+    .create-done-modal .create-done-lead {
+      font-size: 1.05rem;
+      line-height: 1.55;
+      color: var(--fg);
+      margin: 0 0 0.85rem;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .create-done-modal .create-done-quote {
+      margin: 0 0 1rem;
+      padding: 0.75rem 0.9rem;
+      border: 1px solid var(--line);
+      background: #f7f7f7;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      color: var(--fg);
+      text-align: center;
     }
   </style>
 </head>
@@ -1566,6 +1591,19 @@
         7월 추첨 후, 남겨 주신 이메일로 기프티콘을 보내 드릴게요.
       </p>
       <button type="button" class="primary" id="eventDoneCloseBtn">확인</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="createDoneOverlay">
+    <div class="modal create-done-modal">
+      <button type="button" class="close-x" data-close="createDoneOverlay" aria-label="닫기">×</button>
+      <h2>아이디어 뱅크 인정</h2>
+      <p class="create-done-lead" id="createDoneLead">
+        당신은 이런 상상을 하셨군요!<br />아이디어 뱅크로 인정합니다!
+      </p>
+      <p class="create-done-quote hidden" id="createDoneQuote"></p>
+      <p class="hint" id="createDoneHint">응모권 +1이 쌓였어요. 공유 링크로 친구도 불러보세요.</p>
+      <button type="button" class="primary" id="createDoneCloseBtn">확인</button>
     </div>
   </div>
 
@@ -2836,6 +2874,10 @@
     const userChip = document.getElementById("userChip");
     const authOverlay = document.getElementById("authOverlay");
     const createOverlay = document.getElementById("createOverlay");
+    const createDoneOverlay = document.getElementById("createDoneOverlay");
+    const createDoneCloseBtn = document.getElementById("createDoneCloseBtn");
+    const createDoneQuote = document.getElementById("createDoneQuote");
+    const createDoneHint = document.getElementById("createDoneHint");
     const myPostsOverlay = document.getElementById("myPostsOverlay");
     const myPostsList = document.getElementById("myPostsList");
     const myPostsMsg = document.getElementById("myPostsMsg");
@@ -3024,11 +3066,35 @@
       });
     });
 
-    [authOverlay, createOverlay, watchOverlay, eventOverlay, eventDoneOverlay, myPostsOverlay, notifOverlay].forEach((overlay) => {
+    [authOverlay, createOverlay, createDoneOverlay, watchOverlay, eventOverlay, eventDoneOverlay, myPostsOverlay, notifOverlay].forEach((overlay) => {
+      if (!overlay) return;
       overlay.addEventListener("click", (e) => {
         if (e.target === overlay) closeOverlay(overlay);
       });
     });
+
+    function openCreateDoneModal(scenarioText, wantTimed) {
+      if (createDoneQuote) {
+        const q = String(scenarioText || "").trim();
+        if (q) {
+          createDoneQuote.textContent = "「" + q + "」";
+          createDoneQuote.classList.remove("hidden");
+        } else {
+          createDoneQuote.textContent = "";
+          createDoneQuote.classList.add("hidden");
+        }
+      }
+      if (createDoneHint) {
+        createDoneHint.textContent = wantTimed
+          ? "24시간 타임어택으로 올렸어요. 응모권 +1 · 공유 링크로 친구도 불러보세요."
+          : "응모권 +1이 쌓였어요. 공유 링크로 친구도 불러보세요.";
+      }
+      openOverlay(createDoneOverlay);
+    }
+
+    if (createDoneCloseBtn) {
+      createDoneCloseBtn.addEventListener("click", () => closeOverlay(createDoneOverlay));
+    }
 
     function refreshHeader() {
       const profile = getCurrentProfile();
@@ -4169,11 +4235,7 @@
       renderFeed();
       renderSideRankings();
       refreshHeader();
-      showToast(
-        (wantTimed
-          ? "24시간 타임어택 개시물을 올렸어요!"
-          : "만약에 개시물을 올렸어요!") + " 응모권 +1"
-      );
+      openCreateDoneModal(text, wantTimed);
     });
 
     document.getElementById("logoLink").addEventListener("click", (e) => {
