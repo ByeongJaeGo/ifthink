@@ -90,14 +90,26 @@
       position: relative;
     }
 
-    .header-actions .create-btn {
-      border-color: var(--accent);
-      background: var(--accent);
-      color: var(--bg);
-      animation: create-btn-pulse 2.4s ease-in-out infinite;
+    .create-btn-wrap--hero {
+      width: min(100%, 22rem);
+      margin: 1.15rem auto 0.35rem;
+      align-items: center;
     }
 
-    .header-actions .create-btn:hover:not(:disabled) {
+    .create-btn {
+      font: inherit;
+      cursor: pointer;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: var(--bg);
+      padding: 0.7rem 1.1rem;
+      font-size: 1rem;
+      width: 100%;
+      animation: create-btn-pulse 2.4s ease-in-out infinite;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+
+    .create-btn:hover:not(:disabled) {
       border-color: var(--fg);
       background: var(--fg);
       color: var(--bg);
@@ -111,6 +123,7 @@
       gap: 0.15rem;
       pointer-events: none;
       min-height: 1.55rem;
+      width: 100%;
     }
 
     .create-btn-cue-line {
@@ -131,7 +144,7 @@
     }
 
     .create-btn-cue-text {
-      font-size: 0.68rem;
+      font-size: 0.78rem;
       letter-spacing: 0.02em;
       color: var(--accent);
       animation: create-cue-bob 1.4s ease-in-out infinite;
@@ -177,7 +190,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .header-actions .create-btn,
+      .create-btn,
       .create-btn-cue-line,
       .create-btn-cue-text {
         animation: none;
@@ -356,7 +369,7 @@
 
     .seo-intro {
       text-align: center;
-      padding: 1rem 1.25rem 0.25rem;
+      padding: 1rem 1.25rem 0.85rem;
       max-width: 36rem;
       margin: 0 auto;
     }
@@ -1750,13 +1763,6 @@
         알림
         <span class="notif-badge hidden" id="notifBadge">0</span>
       </button>
-      <div class="create-btn-wrap">
-        <button type="button" class="create-btn" id="createBtn">만약에 상황 생성하기</button>
-        <span class="create-btn-cue" aria-hidden="true">
-          <span class="create-btn-cue-line"></span>
-          <span class="create-btn-cue-text">여기를 눌러 개시하기</span>
-        </span>
-      </div>
       <button type="button" class="primary" id="authBtn">로그인</button>
     </div>
   </header>
@@ -1782,6 +1788,13 @@
       ifthink는 ‘만약에 이런다면?’ 상황을 고르는 만약에 게임입니다.
       이상형 챌린지처럼 답을 토너먼트로 골라 보고, 다른 사람들과 선택 비율도 비교할 수 있어요.
     </p>
+    <div class="create-btn-wrap create-btn-wrap--hero">
+      <button type="button" class="create-btn" id="createBtn">만약에 상황 생성하기</button>
+      <span class="create-btn-cue" aria-hidden="true">
+        <span class="create-btn-cue-line"></span>
+        <span class="create-btn-cue-text">여기를 눌러 개시하기</span>
+      </span>
+    </div>
   </section>
 
   <div class="page-layout">
