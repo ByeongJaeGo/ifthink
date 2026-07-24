@@ -2230,6 +2230,123 @@
       };
     }
 
+    const MAVERICK_SEED = {
+      id: "seed-maverick-1jo",
+      text: "만약에 진짜 1조원 있으면 뭐부터 할꺼임? 제일먼저.(부동산 주식x)",
+      options: [
+        "뭘 뭐해 걍 호캉스가서 모든 서비스 누리기",
+        "엄마 아빠한테 백억씩 보내기(되나이게?)",
+        "현금으로 왕창 뽑고 쇼핑이지.",
+        "솔직히 살거 없음. 오히려 실감안날듯.",
+        "택시타고 부산갔다가 서울 갔다가 반복하면서 맛집 ㄱ"
+      ],
+      wins: {
+        "뭘 뭐해 걍 호캉스가서 모든 서비스 누리기": 24,
+        "엄마 아빠한테 백억씩 보내기(되나이게?)": 21,
+        "현금으로 왕창 뽑고 쇼핑이지.": 18,
+        "솔직히 살거 없음. 오히려 실감안날듯.": 15,
+        "택시타고 부산갔다가 서울 갔다가 반복하면서 맛집 ㄱ": 14
+      },
+      author: "매버릭9",
+      plays: 92,
+      createdAt: 0
+    };
+
+    const MAVERICK_COMMENTS = [
+      {
+        id: "mav-c1",
+        author: "호캉스러버",
+        text: "1조인데 호캉스부터면 그게 진짜 부자 마인드임ㅋㅋ",
+        likes: 36,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 18
+      },
+      {
+        id: "mav-c2",
+        author: "효도계좌",
+        text: "백억씩 보내기… 되나이게? 질문이 레전드",
+        likes: 42,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 39
+      },
+      {
+        id: "mav-c3",
+        author: "부산서울셔틀",
+        text: "택시로 부산-서울 반복 맛집… 이게 1조의 낭만이다",
+        likes: 31,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 67
+      },
+      {
+        id: "mav-c4",
+        author: "실감제로",
+        text: "살 거 없음이 제일 솔직함. 숫자가 안 와닿음",
+        likes: 27,
+        likedBy: [],
+        createdAt: Date.now() - 1000 * 60 * 95
+      }
+    ];
+
+    function ensureMaverickSeed(list) {
+      const idx = list.findIndex((s) => s.id === MAVERICK_SEED.id);
+      const now = Date.now();
+      if (idx < 0) {
+        list.push({
+          ...MAVERICK_SEED,
+          options: MAVERICK_SEED.options.slice(),
+          wins: { ...MAVERICK_SEED.wins },
+          createdAt: now - 1000 * 60 * 55
+        });
+        return { list, changed: true };
+      }
+      const cur = list[idx];
+      const next = {
+        ...cur,
+        text: MAVERICK_SEED.text,
+        options: MAVERICK_SEED.options.slice(),
+        wins: { ...MAVERICK_SEED.wins },
+        author: MAVERICK_SEED.author,
+        plays: MAVERICK_SEED.plays
+      };
+      const same =
+        cur.text === next.text &&
+        cur.author === next.author &&
+        (cur.plays || 0) === next.plays &&
+        JSON.stringify(cur.options) === JSON.stringify(next.options);
+      if (!same) {
+        list[idx] = next;
+        return { list, changed: true };
+      }
+      return { list, changed: false };
+    }
+
+    function ensureMaverickComments(map) {
+      const existing = Array.isArray(map[MAVERICK_SEED.id])
+        ? map[MAVERICK_SEED.id].slice()
+        : [];
+      const withoutSeed = existing.filter(
+        (c) => !String(c.id || "").startsWith("mav-c")
+      );
+      const merged = withoutSeed.concat(
+        MAVERICK_COMMENTS.map((c) => ({ ...c }))
+      );
+      const before = JSON.stringify(
+        existing
+          .filter((c) => String(c.id || "").startsWith("mav-c"))
+          .map((c) => [c.id, c.text, c.likes])
+      );
+      const after = JSON.stringify(
+        MAVERICK_COMMENTS.map((c) => [c.id, c.text, c.likes])
+      );
+      if (before === after && existing.length === merged.length) {
+        return { map, changed: false };
+      }
+      return {
+        map: { ...map, [MAVERICK_SEED.id]: merged },
+        changed: true
+      };
+    }
+
     const TIMED_FAMILY_SEED = {
       id: "seed-timed-family",
       text: "ㄸ치다가 가족한테 들킨면... ㅅㅂ..",
@@ -2365,6 +2482,10 @@
             changed = true;
             return { ...s, plays: JUNGBARAM_SEED.plays };
           }
+          if (s.id === MAVERICK_SEED.id && (s.plays || 0) !== MAVERICK_SEED.plays) {
+            changed = true;
+            return { ...s, plays: MAVERICK_SEED.plays };
+          }
           return s;
         });
         const timedEnsured = ensureTimedFamilySeed(list);
@@ -2373,6 +2494,9 @@
         const jungEnsured = ensureJungbaramSeed(list);
         list = jungEnsured.list;
         if (jungEnsured.changed) changed = true;
+        const mavEnsured = ensureMaverickSeed(list);
+        list = mavEnsured.list;
+        if (mavEnsured.changed) changed = true;
         if (changed || !raw) {
           localStorage.setItem(STORAGE_SCENARIOS, JSON.stringify(list));
         }
@@ -2514,7 +2638,15 @@
         map = normalizeCommentsMap(timedComments.map);
         const jungComments = ensureJungbaramComments(map);
         map = normalizeCommentsMap(jungComments.map);
-        if (!raw || ensured.changed || timedComments.changed || jungComments.changed) {
+        const mavComments = ensureMaverickComments(map);
+        map = normalizeCommentsMap(mavComments.map);
+        if (
+          !raw ||
+          ensured.changed ||
+          timedComments.changed ||
+          jungComments.changed ||
+          mavComments.changed
+        ) {
           localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(map));
         }
         return map;
