@@ -1173,6 +1173,25 @@
       font-weight: 600;
     }
 
+    .nick-status {
+      margin: -0.55rem 0 0.85rem;
+      font-size: 0.8rem;
+      min-height: 1.15em;
+      color: var(--muted);
+    }
+
+    .nick-status.ok {
+      color: #1f7a3f;
+    }
+
+    .nick-status.bad {
+      color: var(--danger);
+    }
+
+    .nick-status.checking {
+      color: var(--muted);
+    }
+
     .modal .msg {
       color: var(--danger);
       font-size: 0.85rem;
@@ -1607,6 +1626,7 @@
         <input id="password" type="password" required minlength="6" maxlength="40" autocomplete="current-password" />
         <label for="username">닉네임 (가입·표시용)</label>
         <input id="username" minlength="2" maxlength="20" autocomplete="nickname" placeholder="예: 사과파이" />
+        <p class="nick-status" id="nickStatus" aria-live="polite"></p>
         <p class="msg" id="authMsg"></p>
         <div class="row">
           <button type="submit" class="primary">로그인</button>
@@ -1624,6 +1644,7 @@
       <form id="eventForm">
         <label for="eventNickname">닉네임</label>
         <input id="eventNickname" required minlength="2" maxlength="20" placeholder="표시 닉네임" />
+        <p class="nick-status" id="eventNickStatus" aria-live="polite"></p>
         <label for="eventEmail">이메일 (기프티콘 수신)</label>
         <input id="eventEmail" type="email" required placeholder="you@email.com" />
         <p class="msg" id="eventMsg"></p>
@@ -3278,6 +3299,7 @@
     const signupBtn = document.getElementById("signupBtn");
     const googleSignInBtn = document.getElementById("googleSignInBtn");
     const usernameInput = document.getElementById("username");
+    const nickStatus = document.getElementById("nickStatus");
     const authEmailInput = document.getElementById("authEmail");
     const eventOverlay = document.getElementById("eventOverlay");
     const eventDoneOverlay = document.getElementById("eventDoneOverlay");
@@ -3286,9 +3308,12 @@
     const eventForm = document.getElementById("eventForm");
     const eventMsg = document.getElementById("eventMsg");
     const eventNickname = document.getElementById("eventNickname");
+    const eventNickStatus = document.getElementById("eventNickStatus");
     const eventEmail = document.getElementById("eventEmail");
     bindEmailAutocomplete(authEmailInput);
     bindEmailAutocomplete(eventEmail);
+    bindNickDuplicateCheck(usernameInput, nickStatus);
+    bindNickDuplicateCheck(eventNickname, eventNickStatus);
     const eventDoneText = document.getElementById("eventDoneText");
     const createForm = document.getElementById("createForm");
     const createMsg = document.getElementById("createMsg");
@@ -4199,11 +4224,180 @@
     function normalizeNick(raw) {
       return String(raw || "").trim();
     }
+    function nickKey(raw) {
+      return normalizeNick(raw).toLowerCase();
+    }
+    function setNickStatus(el, state, text) {
+      if (!el) return;
+      el.classList.remove("ok", "bad", "checking");
+      if (state) el.classList.add(state);
+      el.textContent = text || "";
+    }
+    function isNickTakenLocal(nick, exceptUid) {
+      const key = nickKey(nick);
+      if (!key) return false;
+      const profiles = loadProfiles();
+      const uids = Object.keys(profiles);
+      for (let i = 0; i < uids.length; i++) {
+        const uid = uids[i];
+        if (exceptUid && uid === exceptUid) continue;
+        if (nickKey(profiles[uid] && profiles[uid].nickname) === key) return true;
+      }
+      const me = getCurrentProfile();
+      const myKey = me ? nickKey(me.nickname) : "";
+      if (myKey === key && (!exceptUid || (currentAuthUser && currentAuthUser.uid === exceptUid))) {
+        return false;
+      }
+      const authors = loadScenarios()
+        .map((s) => nickKey(s.author))
+        .filter(Boolean);
+      for (let i = 0; i < authors.length; i++) {
+        if (authors[i] !== key) continue;
+        if (myKey === key) return false;
+        return true;
+      }
+      return false;
+    }
+    async function isNickTakenRemote(nick, exceptUid) {
+      const key = nickKey(nick);
+      if (!key) return false;
+      try {
+        const snap = await fbDb.collection("nicknames").doc(key).get();
+        if (!snap.exists) return false;
+        const data = snap.data() || {};
+        if (exceptUid && data.uid === exceptUid) return false;
+        return true;
+      } catch (err) {
+        console.warn("nick check remote", err);
+        return false;
+      }
+    }
+    async function checkNickAvailability(nick, exceptUid) {
+      const cleaned = normalizeNick(nick);
+      if (cleaned.length < 2) {
+        return { ok: false, reason: "short", message: "닉네임은 2자 이상으로 적어 주세요." };
+      }
+      if (cleaned.length > 20) {
+        return { ok: false, reason: "long", message: "닉네임은 20자까지예요." };
+      }
+      if (isNickTakenLocal(cleaned, exceptUid)) {
+        return { ok: false, reason: "taken", message: "이미 사용 중인 닉네임이에요." };
+      }
+      if (await isNickTakenRemote(cleaned, exceptUid)) {
+        return { ok: false, reason: "taken", message: "이미 사용 중인 닉네임이에요." };
+      }
+      return { ok: true, message: "사용 가능한 닉네임이에요." };
+    }
+    async function claimNickname(nick) {
+      if (!currentAuthUser) return { ok: false, message: "로그인이 필요합니다." };
+      const cleaned = normalizeNick(nick);
+      const key = nickKey(cleaned);
+      const avail = await checkNickAvailability(cleaned, currentAuthUser.uid);
+      if (!avail.ok) return avail;
+
+      const oldNick = (getCurrentProfile() && getCurrentProfile().nickname) || "";
+      const oldKey = nickKey(oldNick);
+      const ref = fbDb.collection("nicknames").doc(key);
+      const now = firebase.firestore.FieldValue.serverTimestamp();
+
+      try {
+        await fbDb.runTransaction(async (tx) => {
+          const snap = await tx.get(ref);
+          let oldSnap = null;
+          const oldRef =
+            oldKey && oldKey !== key
+              ? fbDb.collection("nicknames").doc(oldKey)
+              : null;
+          if (oldRef) {
+            oldSnap = await tx.get(oldRef);
+          }
+          if (snap.exists) {
+            const data = snap.data() || {};
+            if (data.uid !== currentAuthUser.uid) {
+              throw new Error("taken");
+            }
+            tx.update(ref, {
+              nickname: cleaned,
+              updatedAt: now
+            });
+          } else {
+            tx.set(ref, {
+              uid: currentAuthUser.uid,
+              nickname: cleaned,
+              createdAt: now,
+              updatedAt: now
+            });
+          }
+          if (
+            oldRef &&
+            oldSnap &&
+            oldSnap.exists &&
+            (oldSnap.data() || {}).uid === currentAuthUser.uid
+          ) {
+            tx.delete(oldRef);
+          }
+        });
+        updateUser(null, { nickname: cleaned });
+        return { ok: true, message: "닉네임을 등록했어요." };
+      } catch (err) {
+        if (String(err && err.message) === "taken" || (err && err.code === "already-exists")) {
+          return { ok: false, reason: "taken", message: "이미 사용 중인 닉네임이에요." };
+        }
+        // Firestore 실패 시 로컬만이라도 중복 아니면 허용
+        if (!isNickTakenLocal(cleaned, currentAuthUser.uid)) {
+          updateUser(null, { nickname: cleaned });
+          return { ok: true, message: "닉네임을 저장했어요." };
+        }
+        return { ok: false, reason: "taken", message: "이미 사용 중인 닉네임이에요." };
+      }
+    }
+
+    function bindNickDuplicateCheck(input, statusEl) {
+      if (!input || input.dataset.nickCheckBound === "1") return;
+      input.dataset.nickCheckBound = "1";
+      let timer = null;
+      let seq = 0;
+
+      async function runCheck() {
+        const mySeq = ++seq;
+        const nick = normalizeNick(input.value);
+        if (!nick) {
+          setNickStatus(statusEl, "", "");
+          return;
+        }
+        if (nick.length < 2) {
+          setNickStatus(statusEl, "bad", "닉네임은 2자 이상으로 적어 주세요.");
+          return;
+        }
+        setNickStatus(statusEl, "checking", "중복 확인 중…");
+        const exceptUid = currentAuthUser ? currentAuthUser.uid : null;
+        const result = await checkNickAvailability(nick, exceptUid);
+        if (mySeq !== seq) return;
+        setNickStatus(statusEl, result.ok ? "ok" : "bad", result.message);
+      }
+
+      input.addEventListener("input", () => {
+        clearTimeout(timer);
+        timer = setTimeout(runCheck, 320);
+      });
+      input.addEventListener("blur", () => {
+        clearTimeout(timer);
+        runCheck();
+      });
+    }
 
     function applyNicknameFromForm() {
       const nick = normalizeNick(usernameInput.value);
       if (nick.length >= 2 && currentAuthUser) {
-        updateUser(null, { nickname: nick });
+        claimNickname(nick).then((result) => {
+          if (!result.ok) {
+            authMsg.textContent = result.message || "닉네임을 쓸 수 없어요.";
+            authMsg.classList.remove("ok");
+            setNickStatus(nickStatus, "bad", result.message);
+          } else {
+            refreshHeader();
+          }
+        });
       }
     }
 
@@ -4213,7 +4407,14 @@
       try {
         const provider = new firebase.auth.GoogleAuthProvider();
         await fbAuth.signInWithPopup(provider);
-        applyNicknameFromForm();
+        const nick = normalizeNick(usernameInput.value);
+        if (nick.length >= 2) {
+          const claimed = await claimNickname(nick);
+          if (!claimed.ok) {
+            authMsg.textContent = claimed.message + " 기본 닉네임으로 입장했어요.";
+            setNickStatus(nickStatus, "bad", claimed.message);
+          }
+        }
         closeOverlay(authOverlay);
         refreshHeader();
       } catch (err) {
@@ -4228,7 +4429,14 @@
       const password = document.getElementById("password").value;
       try {
         await fbAuth.signInWithEmailAndPassword(email, password);
-        applyNicknameFromForm();
+        const nick = normalizeNick(usernameInput.value);
+        if (nick.length >= 2) {
+          const claimed = await claimNickname(nick);
+          if (!claimed.ok) {
+            authMsg.textContent = claimed.message + " 기존 닉네임을 유지해요.";
+            setNickStatus(nickStatus, "bad", claimed.message);
+          }
+        }
         closeOverlay(authOverlay);
         refreshHeader();
       } catch (err) {
@@ -4247,15 +4455,34 @@
       }
       if (nick.length < 2) {
         authMsg.textContent = "닉네임은 2자 이상으로 적어 주세요.";
+        setNickStatus(nickStatus, "bad", "닉네임은 2자 이상으로 적어 주세요.");
         return;
       }
+      const avail = await checkNickAvailability(nick, null);
+      if (!avail.ok) {
+        authMsg.textContent = avail.message;
+        setNickStatus(nickStatus, "bad", avail.message);
+        return;
+      }
+      signupBtn.disabled = true;
       try {
         await fbAuth.createUserWithEmailAndPassword(email, password);
-        updateUser(null, { nickname: nick, email });
+        updateUser(null, { email });
+        const claimed = await claimNickname(nick);
+        if (!claimed.ok) {
+          authMsg.textContent = claimed.message;
+          setNickStatus(nickStatus, "bad", claimed.message);
+          refreshHeader();
+          return;
+        }
+        setNickStatus(nickStatus, "ok", "사용 가능한 닉네임이에요.");
         closeOverlay(authOverlay);
         refreshHeader();
+        showToast("가입 완료! 닉네임 「" + nick + "」");
       } catch (err) {
         authMsg.textContent = authErrorMessage(err);
+      } finally {
+        signupBtn.disabled = false;
       }
     });
 
@@ -4274,6 +4501,10 @@
       eventMsg.classList.remove("ok");
       eventNickname.value = profile.nickname || "";
       eventEmail.value = profile.email || currentAuthUser.email || "";
+      setNickStatus(eventNickStatus, "", "");
+      if (eventNickname.value) {
+        eventNickname.dispatchEvent(new Event("input"));
+      }
       openOverlay(eventOverlay);
     }
 
@@ -4290,10 +4521,18 @@
       const email = (eventEmail.value || "").trim();
       if (nickname.length < 2) {
         eventMsg.textContent = "닉네임은 2자 이상이어야 합니다.";
+        setNickStatus(eventNickStatus, "bad", "닉네임은 2자 이상이어야 합니다.");
         return;
       }
       if (!email || !email.includes("@")) {
         eventMsg.textContent = "이메일을 확인해 주세요.";
+        return;
+      }
+
+      const nickAvail = await checkNickAvailability(nickname, currentAuthUser.uid);
+      if (!nickAvail.ok) {
+        eventMsg.textContent = nickAvail.message;
+        setNickStatus(eventNickStatus, "bad", nickAvail.message);
         return;
       }
 
@@ -4308,6 +4547,12 @@
       const submitBtn = document.getElementById("eventSubmit");
       submitBtn.disabled = true;
       try {
+        const claimed = await claimNickname(nickname);
+        if (!claimed.ok) {
+          eventMsg.textContent = claimed.message;
+          setNickStatus(eventNickStatus, "bad", claimed.message);
+          return;
+        }
         const ref = fbDb.collection("eventEntries").doc(currentAuthUser.uid);
         const existing = await ref.get();
         const now = firebase.firestore.FieldValue.serverTimestamp();
