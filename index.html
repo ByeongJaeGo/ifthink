@@ -2624,7 +2624,7 @@
 
     const TIMED_FAMILY_SEED = {
       id: "seed-timed-family",
-      text: "ㄸ치다가 가족한테 들킨면... ㅅㅂ..",
+      text: "ㄸ치다가 가족한테 들킨면... ㅅㅂ.. 부끄러우니까 1일뒤에 사라지게 할게용",
       options: [
         "걍 자살한다.",
         "황급히 수습한다.",
@@ -2691,18 +2691,28 @@
         return { list, changed: true };
       }
       const cur = list[idx];
-      if (!cur.expiresAt || now >= cur.expiresAt) {
-        list[idx] = {
-          ...cur,
-          text: TIMED_FAMILY_SEED.text,
-          options: TIMED_FAMILY_SEED.options.slice(),
-          wins: { ...TIMED_FAMILY_SEED.wins },
-          author: TIMED_FAMILY_SEED.author,
-          timed: true,
-          createdAt: now,
-          expiresAt: now + 24 * 60 * 60 * 1000,
-          plays: Math.max(cur.plays || 0, TIMED_FAMILY_SEED.plays)
-        };
+      const expired = !cur.expiresAt || now >= cur.expiresAt;
+      const next = {
+        ...cur,
+        text: TIMED_FAMILY_SEED.text,
+        options: TIMED_FAMILY_SEED.options.slice(),
+        wins: { ...TIMED_FAMILY_SEED.wins },
+        author: TIMED_FAMILY_SEED.author,
+        timed: true,
+        plays: Math.max(cur.plays || 0, TIMED_FAMILY_SEED.plays)
+      };
+      if (expired) {
+        next.createdAt = now;
+        next.expiresAt = now + 24 * 60 * 60 * 1000;
+      }
+      const same =
+        cur.text === next.text &&
+        cur.author === next.author &&
+        (cur.plays || 0) === next.plays &&
+        JSON.stringify(cur.options) === JSON.stringify(next.options) &&
+        !expired;
+      if (!same) {
+        list[idx] = next;
         return { list, changed: true };
       }
       return { list, changed: false };
